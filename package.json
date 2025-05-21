@@ -1,0 +1,27 @@
+{
+  "name": "@vik/baselib",
+  "version": "1.0.0",
+  "description": "A private npm-compatible TypeScript library for backend projects.",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "package.json",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsup src/index.ts --format esm,cjs --dts",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [],
+  "author": "Vikash Verma",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/node": "^20.12.12",
+    "tsup": "^8.0.2",
+    "typescript": "^5.4.5"
+  },
+  "dependencies": {
+    "mongoose": "^8.4.0"
+  }
+}
