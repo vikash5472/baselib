@@ -125,3 +125,52 @@ async function runCrudOperations() {
 }
 
 runCrudOperations();
+
+### Redis Module
+
+The `@vik/baselib` Redis module provides a clean, typed connection utility using `ioredis`, supporting multiple Redis instances.
+
+```typescript
+import { connectRedis, getRedis } from '@vik/baselib/redis'; // Note: import from /redis
+
+// Connect to a primary Redis instance
+connectRedis('primary', {
+  host: 'localhost',
+  port: 6379,
+  password: 'your_primary_redis_password', // Replace with your actual password
+});
+
+// Connect to a secondary Redis instance (e.g., for caching)
+connectRedis('cache', {
+  host: 'localhost',
+  port: 6380,
+  password: 'your_cache_redis_password', // Replace with your actual password
+});
+
+async function useRedisInstances() {
+  try {
+    // Get the primary Redis client
+    const primaryRedis = getRedis('primary');
+    await primaryRedis.set('app:status', 'online');
+    console.log('Primary Redis status:', await primaryRedis.get('app:status'));
+
+    // Get the cache Redis client
+    const cacheRedis = getRedis('cache');
+    await cacheRedis.setex('user:123:data', 3600, 'some_cached_user_data'); // Set with expiry
+    console.log('Cache Redis data for user 123:', await cacheRedis.get('user:123:data'));
+
+  } catch (error) {
+    console.error('Error using Redis:', error);
+  } finally {
+    // Disconnect specific Redis instances
+    // await disconnectSpecificRedis('primary');
+    // await disconnectSpecificRedis('cache');
+
+    // Or disconnect all Redis instances
+    // await disconnectAllRedis();
+    console.log('Redis instances usage complete.');
+  }
+}
+
+useRedisInstances();
+```

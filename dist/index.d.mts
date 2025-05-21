@@ -1,4 +1,6 @@
 import { Connection, Document, SchemaDefinition as SchemaDefinition$1, Model, FilterQuery, UpdateQuery } from 'mongoose';
+import Redis, { RedisOptions } from 'ioredis';
+export { RedisOptions } from 'ioredis';
 
 declare class MongoManager {
     private static instance;
@@ -30,4 +32,9 @@ declare class BaseRepository<T extends BaseDocument> {
     delete(id: string): Promise<T | null>;
 }
 
-export { type BaseDocument, BaseRepository, MongoManager, type MongooseModel, type SchemaDefinition, createModel };
+declare const connectRedis: (name: string, options: RedisOptions) => Redis;
+declare const getRedis: (name: string) => Redis;
+declare const disconnectAllRedis: () => Promise<void>;
+declare const disconnectSpecificRedis: (name: string) => Promise<void>;
+
+export { type BaseDocument, BaseRepository, MongoManager, type MongooseModel, type SchemaDefinition, connectRedis, createModel, disconnectAllRedis, disconnectSpecificRedis, getRedis };

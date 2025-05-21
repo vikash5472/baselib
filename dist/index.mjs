@@ -94,8 +94,83 @@ var BaseRepository = class {
     return this.model.findByIdAndDelete(id).exec();
   }
 };
+
+// src/redis/redis.manager.ts
+import Redis from "ioredis";
+var RedisManager = class _RedisManager {
+  constructor() {
+    this.clients = /* @__PURE__ */ new Map();
+  }
+  static getInstance() {
+    if (!_RedisManager.instance) {
+      _RedisManager.instance = new _RedisManager();
+    }
+    return _RedisManager.instance;
+  }
+  connectRedis(name, options) {
+    if (this.clients.has(name)) {
+      console.warn(`Redis client '${name}' already exists. Returning existing client.`);
+      return this.clients.get(name);
+    }
+    const client = new Redis(options);
+    client.on("connect", () => {
+      console.log(`Redis client '${name}' connected successfully.`);
+    });
+    client.on("error", (err) => {
+      console.error(`Redis client '${name}' connection error:`, err);
+    });
+    client.on("end", () => {
+      console.log(`Redis client '${name}' disconnected.`);
+      this.clients.delete(name);
+    });
+    this.clients.set(name, client);
+    return client;
+  }
+  getRedis(name) {
+    const client = this.clients.get(name);
+    if (!client) {
+      throw new Error(`Redis client '${name}' not found. Please connect first.`);
+    }
+    return client;
+  }
+  async disconnectRedis(name) {
+    if (name) {
+      const client = this.clients.get(name);
+      if (client) {
+        await client.quit();
+        this.clients.delete(name);
+        console.log(`Redis client '${name}' explicitly quit.`);
+      } else {
+        console.warn(`Redis client '${name}' not found for disconnection.`);
+      }
+    } else {
+      for (const [clientName, client] of this.clients.entries()) {
+        await client.quit();
+        console.log(`Redis client '${clientName}' explicitly quit.`);
+      }
+      this.clients.clear();
+    }
+  }
+};
+var redisManager = RedisManager.getInstance();
+var connectRedis = (name, options) => {
+  return redisManager.connectRedis(name, options);
+};
+var getRedis = (name) => {
+  return redisManager.getRedis(name);
+};
+var disconnectAllRedis = async () => {
+  await redisManager.disconnectRedis();
+};
+var disconnectSpecificRedis = async (name) => {
+  await redisManager.disconnectRedis(name);
+};
 export {
   BaseRepository,
   mongo_manager_default as MongoManager,
-  createModel
+  connectRedis,
+  createModel,
+  disconnectAllRedis,
+  disconnectSpecificRedis,
+  getRedis
 };
