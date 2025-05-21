@@ -24,6 +24,7 @@
     "typescript": "^5.4.5"
   },
   "dependencies": {
+    "bullmq": "^5.53.0",
     "ioredis": "^5.6.1",
     "mongoose": "^8.4.0"
   }

@@ -32,11 +32,19 @@ var index_exports = {};
 __export(index_exports, {
   BaseRepository: () => BaseRepository,
   MongoManager: () => mongo_manager_default,
+  cacheDel: () => cacheDel,
+  cacheGet: () => cacheGet,
+  cacheSet: () => cacheSet,
   connectRedis: () => connectRedis,
   createModel: () => createModel,
+  createQueue: () => createQueue,
+  createWorker: () => createWorker,
   disconnectAllRedis: () => disconnectAllRedis,
   disconnectSpecificRedis: () => disconnectSpecificRedis,
-  getRedis: () => getRedis
+  getQueue: () => getQueue,
+  getRedis: () => getRedis,
+  publish: () => publish,
+  subscribe: () => subscribe
 });
 module.exports = __toCommonJS(index_exports);
 
@@ -207,13 +215,95 @@ var disconnectAllRedis = async () => {
 var disconnectSpecificRedis = async (name) => {
   await redisManager.disconnectRedis(name);
 };
+
+// src/redis/cache.util.ts
+async function cacheSet(key, value, ttlSeconds, redisName = "default") {
+  const redis = getRedis(redisName);
+  await redis.setex(key, ttlSeconds, JSON.stringify(value));
+}
+async function cacheGet(key, redisName = "default") {
+  const redis = getRedis(redisName);
+  const data = await redis.get(key);
+  return data ? JSON.parse(data) : null;
+}
+async function cacheDel(key, redisName = "default") {
+  const redis = getRedis(redisName);
+  return redis.del(key);
+}
+
+// src/redis/pubsub.util.ts
+var subscriberClients = /* @__PURE__ */ new Map();
+function subscribe(channel, onMessage, redisName = "default") {
+  let subscriber = subscriberClients.get(redisName);
+  if (!subscriber) {
+    subscriber = getRedis(redisName).duplicate();
+    subscriberClients.set(redisName, subscriber);
+    subscriber.on("message", (ch, msg) => {
+      if (ch === channel) {
+        onMessage(msg);
+      }
+    });
+  }
+  subscriber.subscribe(channel);
+}
+async function publish(channel, message, redisName = "default") {
+  const publisher = getRedis(redisName);
+  return publisher.publish(channel, message);
+}
+
+// src/queue/queue.manager.ts
+var import_bullmq = require("bullmq");
+var queues = /* @__PURE__ */ new Map();
+function createQueue(name, redisName = "default", config) {
+  if (queues.has(name)) {
+    return queues.get(name);
+  }
+  const connection = getRedis(redisName);
+  const queue = new import_bullmq.Queue(name, { connection, ...config });
+  queues.set(name, queue);
+  return queue;
+}
+function getQueue(name) {
+  const queue = queues.get(name);
+  if (!queue) {
+    throw new Error(`Queue with name "${name}" not found. Please create it first.`);
+  }
+  return queue;
+}
+
+// src/queue/queue.worker.ts
+var import_bullmq2 = require("bullmq");
+var workers = /* @__PURE__ */ new Map();
+function createWorker(queueName, processor, redisName = "default", opts) {
+  if (workers.has(queueName)) {
+    return workers.get(queueName);
+  }
+  const connection = getRedis(redisName);
+  const worker = new import_bullmq2.Worker(queueName, processor, { connection, ...opts });
+  workers.set(queueName, worker);
+  worker.on("completed", (job) => {
+    console.log(`Job ${job.id} in queue ${queueName} completed.`);
+  });
+  worker.on("failed", (job, err) => {
+    console.error(`Job ${job == null ? void 0 : job.id} in queue ${queueName} failed with error: ${err.message}`);
+  });
+  return worker;
+}
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {
   BaseRepository,
   MongoManager,
+  cacheDel,
+  cacheGet,
+  cacheSet,
   connectRedis,
   createModel,
+  createQueue,
+  createWorker,
   disconnectAllRedis,
   disconnectSpecificRedis,
-  getRedis
+  getQueue,
+  getRedis,
+  publish,
+  subscribe
 });

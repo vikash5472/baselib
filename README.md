@@ -174,3 +174,59 @@ async function useRedisInstances() {
 
 useRedisInstances();
 ```
+
+#### Caching and Pub/Sub Utilities
+
+The Redis module also provides utilities for caching with JSON serialization and a simple Pub/Sub abstraction.
+
+```typescript
+import { connectRedis, cacheSet, cacheGet, publish, subscribe } from '@vik/baselib';
+
+// Redis Connection
+connectRedis('cache', { host: 'localhost', port: 6379 });
+
+async function runRedisUtilities() {
+  // Caching
+  await cacheSet('user:1', { id: 1, name: 'Vikash' }, 60);
+  const user = await cacheGet('user:1');
+  console.log('Cached User:', user);
+
+  // Pub/Sub
+  subscribe('news', msg => console.log('Got:', msg));
+  await publish('news', 'hello-world');
+  console.log('Published message to news channel.');
+}
+
+runRedisUtilities();
+```
+
+### Queue Module
+
+The `@vik/baselib` Queue module provides a robust, reusable solution for managing BullMQ queues and workers, supporting multiple Redis instances and strongly typed jobs.
+
+```typescript
+import {
+  connectRedis,
+  createQueue,
+  getQueue,
+  createWorker,
+} from '@vik/baselib';
+
+// Setup
+connectRedis('jobs', { host: 'localhost', port: 6379 });
+
+async function runQueueExample() {
+  // Producer
+  const emailQueue = createQueue('email', 'jobs');
+  await emailQueue.add('sendMail', { to: 'vikash@example.com' });
+  console.log('Added job to email queue.');
+
+  // Consumer
+  createWorker('email', async (job) => {
+    console.log('Sending email to', job.data.to);
+  });
+  console.log('Email worker created.');
+}
+
+runQueueExample();
+```

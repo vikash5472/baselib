@@ -165,12 +165,94 @@ var disconnectAllRedis = async () => {
 var disconnectSpecificRedis = async (name) => {
   await redisManager.disconnectRedis(name);
 };
+
+// src/redis/cache.util.ts
+async function cacheSet(key, value, ttlSeconds, redisName = "default") {
+  const redis = getRedis(redisName);
+  await redis.setex(key, ttlSeconds, JSON.stringify(value));
+}
+async function cacheGet(key, redisName = "default") {
+  const redis = getRedis(redisName);
+  const data = await redis.get(key);
+  return data ? JSON.parse(data) : null;
+}
+async function cacheDel(key, redisName = "default") {
+  const redis = getRedis(redisName);
+  return redis.del(key);
+}
+
+// src/redis/pubsub.util.ts
+var subscriberClients = /* @__PURE__ */ new Map();
+function subscribe(channel, onMessage, redisName = "default") {
+  let subscriber = subscriberClients.get(redisName);
+  if (!subscriber) {
+    subscriber = getRedis(redisName).duplicate();
+    subscriberClients.set(redisName, subscriber);
+    subscriber.on("message", (ch, msg) => {
+      if (ch === channel) {
+        onMessage(msg);
+      }
+    });
+  }
+  subscriber.subscribe(channel);
+}
+async function publish(channel, message, redisName = "default") {
+  const publisher = getRedis(redisName);
+  return publisher.publish(channel, message);
+}
+
+// src/queue/queue.manager.ts
+import { Queue } from "bullmq";
+var queues = /* @__PURE__ */ new Map();
+function createQueue(name, redisName = "default", config) {
+  if (queues.has(name)) {
+    return queues.get(name);
+  }
+  const connection = getRedis(redisName);
+  const queue = new Queue(name, { connection, ...config });
+  queues.set(name, queue);
+  return queue;
+}
+function getQueue(name) {
+  const queue = queues.get(name);
+  if (!queue) {
+    throw new Error(`Queue with name "${name}" not found. Please create it first.`);
+  }
+  return queue;
+}
+
+// src/queue/queue.worker.ts
+import { Worker } from "bullmq";
+var workers = /* @__PURE__ */ new Map();
+function createWorker(queueName, processor, redisName = "default", opts) {
+  if (workers.has(queueName)) {
+    return workers.get(queueName);
+  }
+  const connection = getRedis(redisName);
+  const worker = new Worker(queueName, processor, { connection, ...opts });
+  workers.set(queueName, worker);
+  worker.on("completed", (job) => {
+    console.log(`Job ${job.id} in queue ${queueName} completed.`);
+  });
+  worker.on("failed", (job, err) => {
+    console.error(`Job ${job == null ? void 0 : job.id} in queue ${queueName} failed with error: ${err.message}`);
+  });
+  return worker;
+}
 export {
   BaseRepository,
   mongo_manager_default as MongoManager,
+  cacheDel,
+  cacheGet,
+  cacheSet,
   connectRedis,
   createModel,
+  createQueue,
+  createWorker,
   disconnectAllRedis,
   disconnectSpecificRedis,
-  getRedis
+  getQueue,
+  getRedis,
+  publish,
+  subscribe
 };
