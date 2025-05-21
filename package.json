@@ -12,7 +12,7 @@
   "scripts": {
     "build": "tsup src/index.ts --format esm,cjs --dts",
     "push": "npm i && npm run build && git add . && git commit -m 'dev: update main' && git push origin main",
-    "release": "npm run build && bash scripts/release.sh",
+    "release": "bash scripts/release.sh",
     "prepublishOnly": "npm run build"
   },
   "keywords": [],
