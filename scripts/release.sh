@@ -36,3 +36,5 @@ git push -f origin release
 git checkout "$ORIGINAL_BRANCH"
 
 echo "✅ Release branch updated and returned to '$ORIGINAL_BRANCH'!"
+
+npm i
