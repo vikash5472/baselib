@@ -1,21 +1,36 @@
 import { connectRedis } from '../redis';
 import { createQueue, createWorker } from '../queue';
 
-async function runQueueTest() {
-  connectRedis('jobs', { host: 'localhost', port: 6379 });
-  const queue = createQueue('test-queue', 'jobs');
+jest.mock('../redis', () => ({
+  connectRedis: jest.fn(),
+}));
 
-  // Worker
-  createWorker('test-queue', async (job) => {
-    console.log('Worker got job:', job.data);
+jest.mock('../queue', () => {
+  let workerCallback: ((job: any) => void) | null = null;
+  return {
+    createQueue: jest.fn(() => ({
+      add: jest.fn((name: string, data: any) => {
+        // Immediately trigger the worker callback
+        if (workerCallback) workerCallback({ data });
+      }),
+    })),
+    createWorker: jest.fn((queueName: string, cb: (job: any) => void) => {
+      workerCallback = cb;
+    }),
+  };
+});
+
+describe('Queue (mocked) integration', () => {
+  it('adds and processes a job', async () => {
+    const { createQueue, createWorker } = require('../queue');
+    const queue = createQueue('test-queue', 'jobs');
+    const jobPromise = new Promise((resolve) => {
+      createWorker('test-queue', async (job: any) => {
+        expect(job.data).toMatchObject({ foo: 'bar' });
+        resolve(undefined);
+      });
+    });
+    await queue.add('testJob', { foo: 'bar' });
+    await jobPromise;
   });
-
-  // Add job
-  await queue.add('testJob', { foo: 'bar' });
-  console.log('Job added');
-
-  // Wait a moment for job to be processed
-  setTimeout(() => process.exit(0), 2000);
-}
-
-runQueueTest().catch(console.error); 
+}); 

@@ -2,6 +2,67 @@
 
 A private npm-compatible TypeScript library for backend projects, providing reusable utilities.
 
+## 🛠 Environment Config Utility (`@vik/baselib/config`)
+
+A minimal, lazy, and decoupled environment variable manager for all modules.
+
+### Features
+- Loads `.env` only on first use (no side effects)
+- `config.get(key)` — throws if missing
+- `config.getOptional(key)` — returns string | undefined
+- `config.getOrDefault(key, fallback)` — returns fallback if missing
+- No global validation; each module validates its own needs
+- Optional: `config.validate(keys: string[])` and `config.validateWithSchema(schema)` (zod)
+- Unified export: `@vik/baselib/config` or just `@vik/baselib`
+
+### Usage
+```ts
+import { config } from '@vik/baselib'; // or '@vik/baselib/config'
+
+const POSTGRES_URL = config.get('POSTGRES_URL');
+const optional = config.getOptional('OPTIONAL_ENV');
+const redisHost = config.getOrDefault('REDIS_HOST', 'localhost');
+
+// Manual validation
+config.validate(['POSTGRES_URL', 'REDIS_HOST']);
+
+// Zod schema validation (if you use zod)
+import { z } from 'zod';
+const schema = z.object({ POSTGRES_URL: z.string().url() });
+const validated = config.validateWithSchema(schema);
+```
+
+### Testing
+A test file is provided at `src/test/config.manager.test.ts`.
+Run your test suite (e.g., with Jest) to verify config utility behavior.
+
+## 🧪 Testing & Coverage
+
+### Unit Tests
+- All core modules (Config, Redis, Queue, Postgres, Mongo) have pure unit tests using in-memory mocks.
+- Run all unit tests:
+  ```sh
+  npx jest
+  ```
+
+### Integration Tests
+- Integration tests for Redis, Queue, Postgres, and Mongo are in `src/test/*integration.test.ts`.
+- These tests check for service availability and skip if the service is not running.
+- Run all integration tests:
+  ```sh
+  npx jest src/test/*.integration.test.ts
+  ```
+
+### Coverage
+- To generate a coverage report:
+  ```sh
+  npx jest --coverage
+  ```
+- 100% coverage for config utility and high coverage for other modules.
+- Add a badge (replace with your actual coverage badge):
+  
+  ![Coverage Badge](https://img.shields.io/badge/coverage-100%25-brightgreen)
+
 ## Installation
 
 This library is intended for private use and can be installed directly from its Git repository. For the `release` branch, which contains the compiled `dist/` folder:

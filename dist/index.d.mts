@@ -150,4 +150,53 @@ type PostgresConnectionConfig = {
     database: string;
 };
 
-export { type BaseDocument, type BaseJobData, BaseRepository, type JobOptions, MongoManager, type MongooseModel, type PlaceholderType, type PostgresConnectionConfig, type QueueConfig, type SchemaDefinition, cacheDel, cacheGet, cacheSet, connectPostgres, connectRedis, createModel, createQueue, createRepository, createWorker, disconnectAllRedis, disconnectSpecificRedis, getDrizzleClient, getQueue, getRedis, publish, subscribe };
+type ZodSchema<T> = {
+    parse(data: unknown): T;
+};
+declare const config: {
+    /**
+     * Get a required environment variable. Throws if missing.
+     * @param key The environment variable key
+     * @returns The value
+     * @throws If the variable is missing
+     */
+    get(key: string): string;
+    /**
+     * Get an optional environment variable. Returns undefined if missing.
+     * @param key The environment variable key
+     * @returns The value or undefined
+     */
+    getOptional(key: string): string | undefined;
+    /**
+     * Get an environment variable or a fallback value if missing.
+     * @param key The environment variable key
+     * @param fallback The fallback value
+     * @returns The value or fallback
+     */
+    getOrDefault(key: string, fallback: string): string;
+    /**
+     * Validate that all given keys are present. Throws if any are missing.
+     * @param keys The required keys
+     * @throws If any are missing
+     */
+    validate(keys: string[]): void;
+    /**
+     * Validate environment using a Zod schema. Throws if invalid.
+     * @param schema The Zod schema
+     * @returns The validated result
+     * @throws If validation fails
+     */
+    validateWithSchema<T>(schema: ZodSchema<T>): T;
+};
+
+interface ConfigManager {
+    get(key: string): string;
+    getOptional(key: string): string | undefined;
+    getOrDefault(key: string, fallback: string): string;
+    validate?(keys: string[]): void;
+    validateWithSchema?<T>(schema: {
+        parse(data: unknown): T;
+    }): T;
+}
+
+export { type BaseDocument, type BaseJobData, BaseRepository, type ConfigManager, type JobOptions, MongoManager, type MongooseModel, type PlaceholderType, type PostgresConnectionConfig, type QueueConfig, type SchemaDefinition, cacheDel, cacheGet, cacheSet, config, connectPostgres, connectRedis, createModel, createQueue, createRepository, createWorker, disconnectAllRedis, disconnectSpecificRedis, getDrizzleClient, getQueue, getRedis, publish, subscribe };

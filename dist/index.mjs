@@ -1,3 +1,10 @@
+var __require = /* @__PURE__ */ ((x) => typeof require !== "undefined" ? require : typeof Proxy !== "undefined" ? new Proxy(x, {
+  get: (a, b) => (typeof require !== "undefined" ? require : a)[b]
+}) : x)(function(x) {
+  if (typeof require !== "undefined") return require.apply(this, arguments);
+  throw Error('Dynamic require of "' + x + '" is not supported');
+});
+
 // src/mongo/mongo.manager.ts
 import mongoose from "mongoose";
 var MongoManager = class _MongoManager {
@@ -204,12 +211,12 @@ async function publish(channel, message, redisName = "default") {
 // src/queue/queue.manager.ts
 import { Queue } from "bullmq";
 var queues = /* @__PURE__ */ new Map();
-function createQueue(name, redisName = "default", config) {
+function createQueue(name, redisName = "default", config2) {
   if (queues.has(name)) {
     return queues.get(name);
   }
   const connection = getRedis(redisName);
-  const queue = new Queue(name, { connection, ...config });
+  const queue = new Queue(name, { connection, ...config2 });
   queues.set(name, queue);
   return queue;
 }
@@ -245,9 +252,9 @@ import { drizzle } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
 var pools = /* @__PURE__ */ new Map();
 var drizzleClients = /* @__PURE__ */ new Map();
-function connectPostgres(name, config) {
+function connectPostgres(name, config2) {
   if (pools.has(name)) return;
-  const pool = new Pool(config);
+  const pool = new Pool(config2);
   pools.set(name, pool);
   const client = drizzle(pool);
   drizzleClients.set(name, client);
@@ -279,12 +286,80 @@ function createRepository(table, dbName = "main", primaryKey = "id") {
     }
   };
 }
+
+// src/config/config.manager.ts
+var dotenvLoaded = false;
+function ensureDotenvLoaded() {
+  if (!dotenvLoaded) {
+    __require("dotenv").config();
+    dotenvLoaded = true;
+  }
+}
+var config = {
+  /**
+   * Get a required environment variable. Throws if missing.
+   * @param key The environment variable key
+   * @returns The value
+   * @throws If the variable is missing
+   */
+  get(key) {
+    ensureDotenvLoaded();
+    const value = process.env[key];
+    if (value === void 0) {
+      throw new Error(`Missing required environment variable: ${key}`);
+    }
+    return value;
+  },
+  /**
+   * Get an optional environment variable. Returns undefined if missing.
+   * @param key The environment variable key
+   * @returns The value or undefined
+   */
+  getOptional(key) {
+    ensureDotenvLoaded();
+    return process.env[key];
+  },
+  /**
+   * Get an environment variable or a fallback value if missing.
+   * @param key The environment variable key
+   * @param fallback The fallback value
+   * @returns The value or fallback
+   */
+  getOrDefault(key, fallback) {
+    var _a;
+    ensureDotenvLoaded();
+    return (_a = process.env[key]) != null ? _a : fallback;
+  },
+  /**
+   * Validate that all given keys are present. Throws if any are missing.
+   * @param keys The required keys
+   * @throws If any are missing
+   */
+  validate(keys) {
+    ensureDotenvLoaded();
+    const missing = keys.filter((k) => process.env[k] === void 0);
+    if (missing.length > 0) {
+      throw new Error(`Missing required environment variables: ${missing.join(", ")}`);
+    }
+  },
+  /**
+   * Validate environment using a Zod schema. Throws if invalid.
+   * @param schema The Zod schema
+   * @returns The validated result
+   * @throws If validation fails
+   */
+  validateWithSchema(schema) {
+    ensureDotenvLoaded();
+    return schema.parse(process.env);
+  }
+};
 export {
   BaseRepository,
   mongo_manager_default as MongoManager,
   cacheDel,
   cacheGet,
   cacheSet,
+  config,
   connectPostgres,
   connectRedis,
   createModel,

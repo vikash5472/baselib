@@ -7,6 +7,7 @@ ORIGINAL_BRANCH=$(git rev-parse --abbrev-ref HEAD)
 echo "🏗️ Building and preparing release branch..."
 
 # Step 1: Build already done via npm script
+# npm run test # (disabled: do not run tests in release)
 npm run build
 
 # Step 2: Switch to release branch (create/reset it)

@@ -35,6 +35,7 @@ __export(index_exports, {
   cacheDel: () => cacheDel,
   cacheGet: () => cacheGet,
   cacheSet: () => cacheSet,
+  config: () => config,
   connectPostgres: () => connectPostgres,
   connectRedis: () => connectRedis,
   createModel: () => createModel,
@@ -257,12 +258,12 @@ async function publish(channel, message, redisName = "default") {
 // src/queue/queue.manager.ts
 var import_bullmq = require("bullmq");
 var queues = /* @__PURE__ */ new Map();
-function createQueue(name, redisName = "default", config) {
+function createQueue(name, redisName = "default", config2) {
   if (queues.has(name)) {
     return queues.get(name);
   }
   const connection = getRedis(redisName);
-  const queue = new import_bullmq.Queue(name, { connection, ...config });
+  const queue = new import_bullmq.Queue(name, { connection, ...config2 });
   queues.set(name, queue);
   return queue;
 }
@@ -298,9 +299,9 @@ var import_node_postgres = require("drizzle-orm/node-postgres");
 var import_pg = require("pg");
 var pools = /* @__PURE__ */ new Map();
 var drizzleClients = /* @__PURE__ */ new Map();
-function connectPostgres(name, config) {
+function connectPostgres(name, config2) {
   if (pools.has(name)) return;
-  const pool = new import_pg.Pool(config);
+  const pool = new import_pg.Pool(config2);
   pools.set(name, pool);
   const client = (0, import_node_postgres.drizzle)(pool);
   drizzleClients.set(name, client);
@@ -332,6 +333,73 @@ function createRepository(table, dbName = "main", primaryKey = "id") {
     }
   };
 }
+
+// src/config/config.manager.ts
+var dotenvLoaded = false;
+function ensureDotenvLoaded() {
+  if (!dotenvLoaded) {
+    require("dotenv").config();
+    dotenvLoaded = true;
+  }
+}
+var config = {
+  /**
+   * Get a required environment variable. Throws if missing.
+   * @param key The environment variable key
+   * @returns The value
+   * @throws If the variable is missing
+   */
+  get(key) {
+    ensureDotenvLoaded();
+    const value = process.env[key];
+    if (value === void 0) {
+      throw new Error(`Missing required environment variable: ${key}`);
+    }
+    return value;
+  },
+  /**
+   * Get an optional environment variable. Returns undefined if missing.
+   * @param key The environment variable key
+   * @returns The value or undefined
+   */
+  getOptional(key) {
+    ensureDotenvLoaded();
+    return process.env[key];
+  },
+  /**
+   * Get an environment variable or a fallback value if missing.
+   * @param key The environment variable key
+   * @param fallback The fallback value
+   * @returns The value or fallback
+   */
+  getOrDefault(key, fallback) {
+    var _a;
+    ensureDotenvLoaded();
+    return (_a = process.env[key]) != null ? _a : fallback;
+  },
+  /**
+   * Validate that all given keys are present. Throws if any are missing.
+   * @param keys The required keys
+   * @throws If any are missing
+   */
+  validate(keys) {
+    ensureDotenvLoaded();
+    const missing = keys.filter((k) => process.env[k] === void 0);
+    if (missing.length > 0) {
+      throw new Error(`Missing required environment variables: ${missing.join(", ")}`);
+    }
+  },
+  /**
+   * Validate environment using a Zod schema. Throws if invalid.
+   * @param schema The Zod schema
+   * @returns The validated result
+   * @throws If validation fails
+   */
+  validateWithSchema(schema) {
+    ensureDotenvLoaded();
+    return schema.parse(process.env);
+  }
+};
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {
   BaseRepository,
@@ -339,6 +407,7 @@ function createRepository(table, dbName = "main", primaryKey = "id") {
   cacheDel,
   cacheGet,
   cacheSet,
+  config,
   connectPostgres,
   connectRedis,
   createModel,
