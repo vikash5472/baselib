@@ -6,9 +6,9 @@ ORIGINAL_BRANCH=$(git rev-parse --abbrev-ref HEAD)
 
 echo "🏗️ Building and preparing release branch..."
 
-# Step 1: Build already done via npm script
-# npm run test # (disabled: do not run tests in release)
-npm run build
+# Step 1: Build already done via pnpm script
+# pnpm run test # (disabled: do not run tests in release)
+pnpm run build
 
 # Step 2: Switch to release branch (create/reset it)
 git checkout -B release
@@ -38,4 +38,4 @@ git checkout "$ORIGINAL_BRANCH"
 
 echo "✅ Release branch updated and returned to '$ORIGINAL_BRANCH'!"
 
-npm i
+pnpm i

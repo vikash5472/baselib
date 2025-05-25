@@ -42,7 +42,7 @@ Run your test suite (e.g., with Jest) to verify config utility behavior.
 - All core modules (Config, Redis, Queue, Postgres, Mongo) have pure unit tests using in-memory mocks.
 - Run all unit tests:
   ```sh
-  npx jest
+  pnpm test
   ```
 
 ### Integration Tests
@@ -50,13 +50,13 @@ Run your test suite (e.g., with Jest) to verify config utility behavior.
 - These tests check for service availability and skip if the service is not running.
 - Run all integration tests:
   ```sh
-  npx jest src/test/*.integration.test.ts
+  pnpm jest src/test/*.integration.test.ts
   ```
 
 ### Coverage
 - To generate a coverage report:
   ```sh
-  npx jest --coverage
+  pnpm test:coverage
   ```
 - 100% coverage for config utility and high coverage for other modules.
 - Add a badge (replace with your actual coverage badge):
@@ -68,8 +68,10 @@ Run your test suite (e.g., with Jest) to verify config utility behavior.
 This library is intended for private use and can be installed directly from its Git repository. For the `release` branch, which contains the compiled `dist/` folder:
 
 ```bash
-npm install git+https://github.com/vikashverma/base-lib.git#release
+pnpm install git+https://github.com/vikashverma/base-lib.git#release
 ```
+
+> **Note:** This project uses [pnpm](https://pnpm.io/) as its package manager. Please use pnpm for all install, build, test, and release workflows.
 
 ## Usage
 
