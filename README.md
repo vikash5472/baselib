@@ -230,3 +230,96 @@ async function runQueueExample() {
 
 runQueueExample();
 ```
+
+## 📦 PostgreSQL Module (Drizzle ORM)
+
+### Features
+- Connect to one or multiple PostgreSQL databases by name
+- Define your own schema using Drizzle's `pgTable`
+- Generate lightweight, strongly-typed repositories
+- Perform readable, type-safe queries
+- Minimal boilerplate
+- Raw query access via `.db`
+- Custom primary key support
+
+### Installation
+```sh
+npm install drizzle-orm pg
+npm install -D drizzle-kit
+```
+
+### Directory Structure
+```
+base-lib/
+└── src/
+    └── postgres/
+        ├── postgres.manager.ts         // Connect & store named clients
+        ├── repo.factory.ts             // Accept schema + table and return repo
+        ├── query.helpers.ts            // Optional advanced query utilities
+        ├── types.ts                    // Shared types (DB config, repo utils)
+        └── index.ts                    // Unified export
+```
+
+### Usage Example
+```ts
+import { pgTable, text, uuid } from 'drizzle-orm/pg-core';
+import { connectPostgres, createRepository } from '@vik/baselib/postgres';
+
+// 1. Define your table schema
+const users = pgTable('users', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  name: text('name').notNull(),
+});
+
+// 2. Connect to your database (can be called multiple times for different DBs)
+connectPostgres('main', {
+  user: 'postgres',
+  password: 'password',
+  host: 'localhost',
+  port: 5432,
+  database: 'testdb',
+});
+
+// 3. Create a repository for your table
+const UserRepo = createRepository(users, 'main');
+
+// 4. Use the repository
+await UserRepo.insert({ name: 'Vikash' });
+const list = await UserRepo.findAll();
+const user = await UserRepo.findById(list[0].id);
+await UserRepo.delete(list[0].id);
+
+// 5. Raw Drizzle client access
+UserRepo.db // Use for advanced queries
+```
+
+### API Reference
+
+#### `connectPostgres(name: string, config: PostgresConnectionConfig): void`
+Connects and stores a named PostgreSQL connection using Drizzle ORM.
+- `name`: Unique identifier for the connection
+- `config`: `{ user, password, host, port, database }`
+
+#### `getDrizzleClient(name: string): DrizzleClient`
+Returns the Drizzle client for a given connection name.
+
+#### `createRepository<T extends Table, PK = 'id'>(table: T, dbName = 'main', primaryKey = 'id')`
+Returns a repository object for the given table and database.
+- `insert(data)`: Insert a row
+- `findAll()`: Get all rows
+- `findById(id)`: Get row by primary key
+- `delete(id)`: Delete row by primary key
+- `.db`: Raw Drizzle client for advanced queries
+
+#### Types
+- `PostgresConnectionConfig`: `{ user, password, host, port, database }`
+- `InferModel`, `Table`: Re-exported from Drizzle ORM for convenience
+
+### Advanced
+- You can connect to multiple databases by calling `connectPostgres` with different names.
+- You can specify a custom primary key column name in `createRepository`.
+- Use `.db` for raw Drizzle queries or transactions.
+- Add your own helpers in `query.helpers.ts`.
+
+## License
+MIT

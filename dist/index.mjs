@@ -239,18 +239,61 @@ function createWorker(queueName, processor, redisName = "default", opts) {
   });
   return worker;
 }
+
+// src/postgres/postgres.manager.ts
+import { drizzle } from "drizzle-orm/node-postgres";
+import { Pool } from "pg";
+var pools = /* @__PURE__ */ new Map();
+var drizzleClients = /* @__PURE__ */ new Map();
+function connectPostgres(name, config) {
+  if (pools.has(name)) return;
+  const pool = new Pool(config);
+  pools.set(name, pool);
+  const client = drizzle(pool);
+  drizzleClients.set(name, client);
+}
+function getDrizzleClient(name) {
+  const client = drizzleClients.get(name);
+  if (!client) throw new Error(`Drizzle client for '${name}' not found. Did you call connectPostgres?`);
+  return client;
+}
+
+// src/postgres/repo.factory.ts
+function createRepository(table, dbName = "main", primaryKey = "id") {
+  const db = getDrizzleClient(dbName);
+  return {
+    db,
+    // raw access
+    insert: async (data) => {
+      await db.insert(table).values(data).returning();
+    },
+    findAll: async () => {
+      return await db.select().from(table);
+    },
+    findById: async (id) => {
+      const rows = await db.select().from(table).where(table[primaryKey].eq(id));
+      return rows[0];
+    },
+    delete: async (id) => {
+      await db.delete(table).where(table[primaryKey].eq(id)).returning();
+    }
+  };
+}
 export {
   BaseRepository,
   mongo_manager_default as MongoManager,
   cacheDel,
   cacheGet,
   cacheSet,
+  connectPostgres,
   connectRedis,
   createModel,
   createQueue,
+  createRepository,
   createWorker,
   disconnectAllRedis,
   disconnectSpecificRedis,
+  getDrizzleClient,
   getQueue,
   getRedis,
   publish,

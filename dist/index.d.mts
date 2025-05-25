@@ -2,6 +2,12 @@ import { Connection, Document, SchemaDefinition as SchemaDefinition$1, Model, Fi
 import Redis, { RedisOptions } from 'ioredis';
 export { RedisOptions } from 'ioredis';
 import { QueueOptions, JobsOptions, Queue, Processor, WorkerOptions, Worker } from 'bullmq';
+import * as drizzle_orm_node_postgres from 'drizzle-orm/node-postgres';
+import { drizzle } from 'drizzle-orm/node-postgres';
+import { PoolConfig } from 'pg';
+import * as drizzle_orm from 'drizzle-orm';
+import { Table, InferModel } from 'drizzle-orm';
+export { InferModel, Table } from 'drizzle-orm';
 
 declare class MongoManager {
     private static instance;
@@ -121,4 +127,27 @@ declare function getQueue<T = any>(name: string): Queue<T>;
  */
 declare function createWorker<T = any>(queueName: string, processor: Processor<T>, redisName?: string, opts?: WorkerOptions): Worker<T>;
 
-export { type BaseDocument, type BaseJobData, BaseRepository, type JobOptions, MongoManager, type MongooseModel, type QueueConfig, type SchemaDefinition, cacheDel, cacheGet, cacheSet, connectRedis, createModel, createQueue, createWorker, disconnectAllRedis, disconnectSpecificRedis, getQueue, getRedis, publish, subscribe };
+declare function connectPostgres(name: string, config: PoolConfig): void;
+declare function getDrizzleClient(name: string): ReturnType<typeof drizzle>;
+
+declare function createRepository<T extends Table, PK extends keyof InferModel<T, 'select'> = 'id'>(table: T, dbName?: string, primaryKey?: PK): {
+    db: drizzle_orm_node_postgres.NodePgDatabase<Record<string, unknown>> & {
+        $client: drizzle_orm_node_postgres.NodePgClient;
+    };
+    insert: (data: { [Key in keyof T["_"]["columns"] & string as drizzle_orm.RequiredKeyOnly<Key, T["_"]["columns"][Key]>]: T["_"]["columns"][Key]["_"]["notNull"] extends true ? T["_"]["columns"][Key]["_"]["data"] : T["_"]["columns"][Key]["_"]["data"] | null; } & { [Key_1 in keyof T["_"]["columns"] & string as drizzle_orm.OptionalKeyOnly<Key_1, T["_"]["columns"][Key_1], unknown>]?: (T["_"]["columns"][Key_1]["_"]["notNull"] extends true ? T["_"]["columns"][Key_1]["_"]["data"] : T["_"]["columns"][Key_1]["_"]["data"] | null) | undefined; } extends infer T_1 ? { [K in keyof T_1]: ({ [Key in keyof T["_"]["columns"] & string as drizzle_orm.RequiredKeyOnly<Key, T["_"]["columns"][Key]>]: T["_"]["columns"][Key]["_"]["notNull"] extends true ? T["_"]["columns"][Key]["_"]["data"] : T["_"]["columns"][Key]["_"]["data"] | null; } & { [Key_1 in keyof T["_"]["columns"] & string as drizzle_orm.OptionalKeyOnly<Key_1, T["_"]["columns"][Key_1], unknown>]?: (T["_"]["columns"][Key_1]["_"]["notNull"] extends true ? T["_"]["columns"][Key_1]["_"]["data"] : T["_"]["columns"][Key_1]["_"]["data"] | null) | undefined; })[K]; } : never) => Promise<void>;
+    findAll: () => Promise<({ [Key in keyof T["_"]["columns"] & string as Key]: T["_"]["columns"][Key]["_"]["notNull"] extends true ? T["_"]["columns"][Key]["_"]["data"] : T["_"]["columns"][Key]["_"]["data"] | null; } extends infer T_1 ? { [K in keyof T_1]: { [Key in keyof T["_"]["columns"] & string as Key]: T["_"]["columns"][Key]["_"]["notNull"] extends true ? T["_"]["columns"][Key]["_"]["data"] : T["_"]["columns"][Key]["_"]["data"] | null; }[K]; } : never)[]>;
+    findById: (id: ({ [Key in keyof T["_"]["columns"] & string as Key]: T["_"]["columns"][Key]["_"]["notNull"] extends true ? T["_"]["columns"][Key]["_"]["data"] : T["_"]["columns"][Key]["_"]["data"] | null; } extends infer T_1 ? { [K in keyof T_1]: { [Key in keyof T["_"]["columns"] & string as Key]: T["_"]["columns"][Key]["_"]["notNull"] extends true ? T["_"]["columns"][Key]["_"]["data"] : T["_"]["columns"][Key]["_"]["data"] | null; }[K]; } : never)[PK]) => Promise<({ [Key in keyof T["_"]["columns"] & string as Key]: T["_"]["columns"][Key]["_"]["notNull"] extends true ? T["_"]["columns"][Key]["_"]["data"] : T["_"]["columns"][Key]["_"]["data"] | null; } extends infer T_2 ? { [K in keyof T_2]: { [Key in keyof T["_"]["columns"] & string as Key]: T["_"]["columns"][Key]["_"]["notNull"] extends true ? T["_"]["columns"][Key]["_"]["data"] : T["_"]["columns"][Key]["_"]["data"] | null; }[K]; } : never) | undefined>;
+    delete: (id: ({ [Key in keyof T["_"]["columns"] & string as Key]: T["_"]["columns"][Key]["_"]["notNull"] extends true ? T["_"]["columns"][Key]["_"]["data"] : T["_"]["columns"][Key]["_"]["data"] | null; } extends infer T_1 ? { [K in keyof T_1]: { [Key in keyof T["_"]["columns"] & string as Key]: T["_"]["columns"][Key]["_"]["notNull"] extends true ? T["_"]["columns"][Key]["_"]["data"] : T["_"]["columns"][Key]["_"]["data"] | null; }[K]; } : never)[PK]) => Promise<void>;
+};
+
+interface PlaceholderType {
+}
+type PostgresConnectionConfig = {
+    user: string;
+    password: string;
+    host: string;
+    port: number;
+    database: string;
+};
+
+export { type BaseDocument, type BaseJobData, BaseRepository, type JobOptions, MongoManager, type MongooseModel, type PlaceholderType, type PostgresConnectionConfig, type QueueConfig, type SchemaDefinition, cacheDel, cacheGet, cacheSet, connectPostgres, connectRedis, createModel, createQueue, createRepository, createWorker, disconnectAllRedis, disconnectSpecificRedis, getDrizzleClient, getQueue, getRedis, publish, subscribe };

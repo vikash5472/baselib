@@ -35,12 +35,15 @@ __export(index_exports, {
   cacheDel: () => cacheDel,
   cacheGet: () => cacheGet,
   cacheSet: () => cacheSet,
+  connectPostgres: () => connectPostgres,
   connectRedis: () => connectRedis,
   createModel: () => createModel,
   createQueue: () => createQueue,
+  createRepository: () => createRepository,
   createWorker: () => createWorker,
   disconnectAllRedis: () => disconnectAllRedis,
   disconnectSpecificRedis: () => disconnectSpecificRedis,
+  getDrizzleClient: () => getDrizzleClient,
   getQueue: () => getQueue,
   getRedis: () => getRedis,
   publish: () => publish,
@@ -289,6 +292,46 @@ function createWorker(queueName, processor, redisName = "default", opts) {
   });
   return worker;
 }
+
+// src/postgres/postgres.manager.ts
+var import_node_postgres = require("drizzle-orm/node-postgres");
+var import_pg = require("pg");
+var pools = /* @__PURE__ */ new Map();
+var drizzleClients = /* @__PURE__ */ new Map();
+function connectPostgres(name, config) {
+  if (pools.has(name)) return;
+  const pool = new import_pg.Pool(config);
+  pools.set(name, pool);
+  const client = (0, import_node_postgres.drizzle)(pool);
+  drizzleClients.set(name, client);
+}
+function getDrizzleClient(name) {
+  const client = drizzleClients.get(name);
+  if (!client) throw new Error(`Drizzle client for '${name}' not found. Did you call connectPostgres?`);
+  return client;
+}
+
+// src/postgres/repo.factory.ts
+function createRepository(table, dbName = "main", primaryKey = "id") {
+  const db = getDrizzleClient(dbName);
+  return {
+    db,
+    // raw access
+    insert: async (data) => {
+      await db.insert(table).values(data).returning();
+    },
+    findAll: async () => {
+      return await db.select().from(table);
+    },
+    findById: async (id) => {
+      const rows = await db.select().from(table).where(table[primaryKey].eq(id));
+      return rows[0];
+    },
+    delete: async (id) => {
+      await db.delete(table).where(table[primaryKey].eq(id)).returning();
+    }
+  };
+}
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {
   BaseRepository,
@@ -296,12 +339,15 @@ function createWorker(queueName, processor, redisName = "default", opts) {
   cacheDel,
   cacheGet,
   cacheSet,
+  connectPostgres,
   connectRedis,
   createModel,
   createQueue,
+  createRepository,
   createWorker,
   disconnectAllRedis,
   disconnectSpecificRedis,
+  getDrizzleClient,
   getQueue,
   getRedis,
   publish,
