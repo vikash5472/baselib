@@ -12,7 +12,7 @@
   "scripts": {
     "build": "tsup src/index.ts --format esm,cjs --dts",
     "push": "pnpm i && pnpm run build && git add . && git commit -m 'dev: update main' && git push origin main",
-    "release": "NODE_ENV=production pnpm run build && bash scripts/release.sh",
+    "release": "NODE_ENV=production bash scripts/release.sh",
     "prepublishOnly": "pnpm run build",
     "test": "NODE_ENV=development jest",
     "test:coverage": "NODE_ENV=development jest --coverage"
