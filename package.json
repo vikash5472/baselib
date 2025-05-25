@@ -1,6 +1,6 @@
 {
   "name": "@vik/baselib",
-  "version": "1.0.0",
+  "version": "0.0.0",
   "description": "A private npm-compatible TypeScript library for backend projects.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
