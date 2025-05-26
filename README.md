@@ -582,6 +582,113 @@ async function presignExample2() {
 // presignExample2();
 ```
 
+#### API Integration Example (Express.js)
+
+This example demonstrates how to integrate the file upload utility into an Express.js application, handling both direct file uploads via a POST endpoint and generating presigned URLs for client-side uploads.
+
+**Dependencies for this example:**
+```sh
+pnpm add express multer @types/express @types/multer
+```
+
+```ts
+import express from 'express';
+import multer from 'multer';
+import { uploadManager, uploadFile, generatePresignedUrl } from '@vik/baselib/upload';
+import { AppError, handleError } from '@vik/baselib/errors';
+import { logger } from '@vik/baselib/logger'; // Assuming logger is configured
+
+const app = express();
+const upload = multer({ storage: multer.memoryStorage() }); // Use memory storage for buffer access
+
+// Configure the upload manager globally (e.g., in your app's bootstrap file)
+uploadManager.configure({
+  defaultProvider: 'aws',
+  credentials: {
+    provider: 'aws',
+    accessKeyId: 'YOUR_AWS_ACCESS_KEY_ID',
+    secretAccessKey: 'YOUR_AWS_SECRET_ACCESS_KEY',
+    region: 'YOUR_AWS_REGION',
+  },
+});
+
+// Middleware for error handling (from @vik/baselib/errors)
+app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
+  const { statusCode, message, type } = handleError(err, { logger });
+  res.status(statusCode).json({ message, type });
+});
+
+// Endpoint for direct file upload
+app.post('/upload-direct', upload.single('file'), async (req, res, next) => {
+  try {
+    if (!req.file) {
+      throw new AppError('No file provided for upload.', 400);
+    }
+
+    const fileBuffer = req.file.buffer;
+    const originalname = req.file.originalname;
+    const mimetype = req.file.mimetype;
+
+    // Determine file extension or use original name
+    const fileExtension = originalname.split('.').pop();
+    const key = `uploads/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExtension}`;
+
+    const result = await uploadFile(fileBuffer, {
+      key: key,
+      mimeType: mimetype,
+      bucket: 'your-upload-bucket', // Use your configured bucket
+      isRequired: true,
+      // provider and credentials can be omitted if globally configured
+    });
+
+    res.status(200).json({
+      message: 'File uploaded successfully!',
+      url: result.url,
+      key: result.key,
+      provider: result.provider,
+    });
+  } catch (error) {
+    next(error); // Pass error to centralized error handler
+  }
+});
+
+// Endpoint to generate a presigned URL for client-side upload
+app.post('/generate-presigned-url', async (req, res, next) => {
+  try {
+    const { filename, mimeType, bucket } = req.body; // Client sends desired filename, mimeType, bucket
+
+    if (!filename || !mimeType || !bucket) {
+      throw new AppError('Filename, mimeType, and bucket are required.', 400);
+    }
+
+    const key = `uploads/${Date.now()}-${Math.random().toString(36).substring(7)}-${filename}`;
+
+    const presigned = await generatePresignedUrl({
+      key: key,
+      mimeType: mimeType,
+      bucket: bucket,
+      expiresIn: 3600, // URL valid for 1 hour
+      // provider and credentials can be omitted if globally configured
+    });
+
+    res.status(200).json({
+      message: 'Presigned URL generated successfully!',
+      url: presigned.url,
+      fields: presigned.fields, // For S3 POST presigned URLs
+      key: key,
+    });
+  } catch (error) {
+    next(error); // Pass error to centralized error handler
+  }
+});
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  logger.info(`Server running on port ${PORT}`);
+  console.log(`Server running on http://localhost:${PORT}`);
+});
+```
+
 ### 13. Lodash Utilities (`_` Object)
 
 The `@vik/baselib/utils` module now integrates the full [Lodash](https://lodash.com/) library, exposed via a single `_` object. This provides a comprehensive set of high-performance utility functions for common programming tasks, replicating the familiar Lodash developer experience.
