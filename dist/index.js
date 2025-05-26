@@ -860,12 +860,12 @@ Object.assign(import_lodash.default, {
   // Add retry function
   retry: async (fn, times, delay = 0) => {
     let lastErr;
-    for (let i = 0; i < times; i++) {
+    for (let i = 0; i <= times; i++) {
       try {
         return await fn();
       } catch (err) {
         lastErr = err;
-        if (delay) await import_lodash.default.sleep(delay);
+        if (i < times && delay) await import_lodash.default.sleep(delay);
       }
     }
     throw lastErr;

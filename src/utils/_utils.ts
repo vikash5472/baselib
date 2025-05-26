@@ -22,12 +22,12 @@ Object.assign(lodash, {
   // Add retry function
   retry: async <T>(fn: () => Promise<T>, times: number, delay = 0): Promise<T> => {
     let lastErr: any;
-    for (let i = 0; i < times; i++) {
+    for (let i = 0; i <= times; i++) { // Changed condition to <= times for (times + 1) total attempts
       try {
         return await fn();
       } catch (err) {
         lastErr = err;
-        if (delay) await lodash.sleep(delay); // Use lodash.sleep
+        if (i < times && delay) await lodash.sleep(delay); // Only delay if more retries are left
       }
     }
     throw lastErr;

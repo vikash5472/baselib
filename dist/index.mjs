@@ -823,12 +823,12 @@ Object.assign(lodash, {
   // Add retry function
   retry: async (fn, times, delay = 0) => {
     let lastErr;
-    for (let i = 0; i < times; i++) {
+    for (let i = 0; i <= times; i++) {
       try {
         return await fn();
       } catch (err) {
         lastErr = err;
-        if (delay) await lodash.sleep(delay);
+        if (i < times && delay) await lodash.sleep(delay);
       }
     }
     throw lastErr;
