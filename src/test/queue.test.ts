@@ -33,4 +33,13 @@ describe('Queue (mocked) integration', () => {
     await queue.add('testJob', { foo: 'bar' });
     await jobPromise;
   });
+
+  it('does not call worker if not registered', async () => {
+    const { createQueue } = require('../queue');
+    const queue = createQueue('test-queue2', 'jobs');
+    // No worker registered for this queue
+    let called = false;
+    await queue.add('testJob', { foo: 'bar' });
+    expect(called).toBe(false);
+  });
 }); 

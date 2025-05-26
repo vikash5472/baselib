@@ -56,4 +56,26 @@ describe('Mongo (mocked) integration', () => {
     expect(deleted?._id).toBe(1);
     await mongoManager.disconnect('test');
   });
+
+  it('returns undefined for missing document', async () => {
+    const { BaseRepository } = require('../mongo');
+    class UserRepository extends BaseRepository {
+      constructor() { super(); }
+    }
+    const userRepository = new UserRepository();
+    const found = await userRepository.findById(999);
+    expect(found).toBeUndefined();
+    const deleted = await userRepository.delete(999);
+    expect(deleted).toBeUndefined();
+  });
+
+  it('does not update if document not found', async () => {
+    const { BaseRepository } = require('../mongo');
+    class UserRepository extends BaseRepository {
+      constructor() { super(); }
+    }
+    const userRepository = new UserRepository();
+    const updated = await userRepository.update(999, { age: 30 });
+    expect(updated).toBeUndefined();
+  });
 }); 

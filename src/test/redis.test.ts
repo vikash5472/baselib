@@ -36,4 +36,19 @@ describe('Redis (mocked) integration', () => {
       publish('test-channel', 'hello');
     });
   });
+
+  it('returns undefined for missing cache', async () => {
+    const missing = await cacheGet('does-not-exist');
+    expect(missing).toBeUndefined();
+  });
+
+  it('does not call pubsub callback if not subscribed', async () => {
+    // Unset callback
+    const { publish } = require('../redis');
+    let called = false;
+    // @ts-ignore
+    require('../redis').subscribe('other', undefined);
+    require('../redis').publish('other', 'msg');
+    expect(called).toBe(false);
+  });
 }); 

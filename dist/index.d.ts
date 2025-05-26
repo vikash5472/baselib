@@ -8,6 +8,7 @@ import { PoolConfig } from 'pg';
 import * as drizzle_orm from 'drizzle-orm';
 import { Table, InferModel } from 'drizzle-orm';
 export { InferModel, Table } from 'drizzle-orm';
+import { Logger } from 'pino';
 
 declare class MongoManager {
     private static instance;
@@ -258,4 +259,32 @@ declare const email: {
     sendEmail(options: EmailOptions): Promise<EmailResult>;
 };
 
-export { type BaseDocument, type BaseJobData, BaseRepository, type ConfigManager, type EmailOptions, type EmailProvider, type EmailResult, type JobOptions, MongoManager, type MongooseModel, type PlaceholderType, type PostgresConnectionConfig, type QueueConfig, type SchemaDefinition, SendGridProvider, type SendGridProviderOptions, SmtpProvider, type SmtpProviderOptions, cacheDel, cacheGet, cacheSet, config, connectPostgres, connectRedis, createModel, createQueue, createRepository, createWorker, disconnectAllRedis, disconnectSpecificRedis, email, getDrizzleClient, getQueue, getRedis, publish, subscribe };
+interface LoggerContext {
+    requestId?: string;
+    module?: string;
+    [key: string]: any;
+}
+interface PinoLogger {
+    info: (msg: string, meta?: object) => void;
+    error: (msg: string, meta?: object) => void;
+    warn: (msg: string, meta?: object) => void;
+    debug: (msg: string, meta?: object) => void;
+    child: (context: LoggerContext) => PinoLogger;
+    setUser?: (user: {
+        id: string;
+        email?: string;
+        [key: string]: any;
+    }) => void;
+    _pino?: Logger;
+}
+
+declare const logger: PinoLogger;
+
+type index_LoggerContext = LoggerContext;
+type index_PinoLogger = PinoLogger;
+declare const index_logger: typeof logger;
+declare namespace index {
+  export { type index_LoggerContext as LoggerContext, type index_PinoLogger as PinoLogger, index_logger as logger };
+}
+
+export { type BaseDocument, type BaseJobData, BaseRepository, type ConfigManager, type EmailOptions, type EmailProvider, type EmailResult, type JobOptions, MongoManager, type MongooseModel, type PlaceholderType, type PostgresConnectionConfig, type QueueConfig, type SchemaDefinition, SendGridProvider, type SendGridProviderOptions, SmtpProvider, type SmtpProviderOptions, cacheDel, cacheGet, cacheSet, config, connectPostgres, connectRedis, createModel, createQueue, createRepository, createWorker, disconnectAllRedis, disconnectSpecificRedis, email, getDrizzleClient, getQueue, getRedis, index as logger, publish, subscribe };

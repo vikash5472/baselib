@@ -1,9 +1,14 @@
+var __defProp = Object.defineProperty;
 var __require = /* @__PURE__ */ ((x) => typeof require !== "undefined" ? require : typeof Proxy !== "undefined" ? new Proxy(x, {
   get: (a, b) => (typeof require !== "undefined" ? require : a)[b]
 }) : x)(function(x) {
   if (typeof require !== "undefined") return require.apply(this, arguments);
   throw Error('Dynamic require of "' + x + '" is not supported');
 });
+var __export = (target, all) => {
+  for (var name in all)
+    __defProp(target, name, { get: all[name], enumerable: true });
+};
 
 // src/mongo/mongo.manager.ts
 import mongoose from "mongoose";
@@ -445,6 +450,43 @@ var email = {
     }
   }
 };
+
+// src/logger/index.ts
+var logger_exports = {};
+__export(logger_exports, {
+  logger: () => logger
+});
+
+// src/logger/logger.manager.ts
+import pino from "pino";
+var instance = null;
+function createLogger(context = {}, parent) {
+  const isDev = process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "prod";
+  const options = {
+    level: process.env.LOG_LEVEL || "info",
+    timestamp: pino.stdTimeFunctions.isoTime,
+    ...isDev ? { transport: { target: "pino-pretty", options: { colorize: true, translateTime: "SYS:standard" } } } : {},
+    base: void 0
+    // don't include pid, hostname by default
+  };
+  const logger2 = parent ? parent.child(context) : pino(options).child(context);
+  const api = {
+    info: (msg, meta) => logger2.info(meta || {}, msg),
+    error: (msg, meta) => logger2.error(meta || {}, msg),
+    warn: (msg, meta) => logger2.warn(meta || {}, msg),
+    debug: (msg, meta) => logger2.debug(meta || {}, msg),
+    child: (childContext) => createLogger(childContext, logger2),
+    _pino: logger2
+  };
+  return api;
+}
+function getLogger() {
+  if (!instance) {
+    instance = createLogger();
+  }
+  return instance;
+}
+var logger = getLogger();
 export {
   BaseRepository,
   mongo_manager_default as MongoManager,
@@ -466,6 +508,7 @@ export {
   getDrizzleClient,
   getQueue,
   getRedis,
+  logger_exports as logger,
   publish,
   subscribe
 };

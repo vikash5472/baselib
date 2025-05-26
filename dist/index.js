@@ -50,6 +50,7 @@ __export(index_exports, {
   getDrizzleClient: () => getDrizzleClient,
   getQueue: () => getQueue,
   getRedis: () => getRedis,
+  logger: () => logger_exports,
   publish: () => publish,
   subscribe: () => subscribe
 });
@@ -495,6 +496,43 @@ var email = {
     }
   }
 };
+
+// src/logger/index.ts
+var logger_exports = {};
+__export(logger_exports, {
+  logger: () => logger
+});
+
+// src/logger/logger.manager.ts
+var import_pino = __toESM(require("pino"));
+var instance = null;
+function createLogger(context = {}, parent) {
+  const isDev = process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "prod";
+  const options = {
+    level: process.env.LOG_LEVEL || "info",
+    timestamp: import_pino.default.stdTimeFunctions.isoTime,
+    ...isDev ? { transport: { target: "pino-pretty", options: { colorize: true, translateTime: "SYS:standard" } } } : {},
+    base: void 0
+    // don't include pid, hostname by default
+  };
+  const logger2 = parent ? parent.child(context) : (0, import_pino.default)(options).child(context);
+  const api = {
+    info: (msg, meta) => logger2.info(meta || {}, msg),
+    error: (msg, meta) => logger2.error(meta || {}, msg),
+    warn: (msg, meta) => logger2.warn(meta || {}, msg),
+    debug: (msg, meta) => logger2.debug(meta || {}, msg),
+    child: (childContext) => createLogger(childContext, logger2),
+    _pino: logger2
+  };
+  return api;
+}
+function getLogger() {
+  if (!instance) {
+    instance = createLogger();
+  }
+  return instance;
+}
+var logger = getLogger();
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {
   BaseRepository,
@@ -517,6 +555,7 @@ var email = {
   getDrizzleClient,
   getQueue,
   getRedis,
+  logger,
   publish,
   subscribe
 });

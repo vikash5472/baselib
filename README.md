@@ -191,6 +191,29 @@ await email.sendEmail({
 
 > You can add more providers (Mailgun, SES, etc.) by implementing the `EmailProvider` interface.
 
+### 7. Logger Module (Pino-based, Singleton)
+
+A high-performance, singleton logger using [pino](https://getpino.io/), with structured logging, context support, and pretty-printing in development.
+
+```ts
+import { logger } from '@vik/baselib/logger';
+
+logger.info('Server started');
+logger.error('Something went wrong', { err: error });
+
+// With context (child logger)
+const authLogger = logger.child({ module: 'auth', requestId: 'abc123' });
+authLogger.info('User login started');
+```
+
+- **Singleton:** Shared across your app, never re-initialized
+- **Context:** Use `logger.child({ ... })` for per-request or per-module context
+- **Pretty in dev:** Pretty-prints logs if `NODE_ENV` is not production
+- **JSON in prod:** Outputs JSON logs in production
+- **Extensible:** Future support for external transports (Sentry, CloudWatch, etc.)
+
+> Uses `pino` (runtime) and `pino-pretty` (dev only). No config needed for basic use.
+
 ---
 
 ## 🧪 Testing & Coverage
