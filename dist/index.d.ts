@@ -13,6 +13,8 @@ import { z } from 'zod';
 export { ZodError, ZodIssue, ZodObject, ZodRawShape, ZodTypeAny } from 'zod';
 import * as lodash from 'lodash';
 import lodash__default from 'lodash';
+import { Request, Response, NextFunction } from 'express';
+import { JwtPayload, SignOptions, VerifyOptions } from 'jsonwebtoken';
 
 declare class MongoManager {
     private static instance;
@@ -494,4 +496,66 @@ declare const utils: {
     _: lodash.LoDashStatic;
 };
 
-export { type BaseDocument, type BaseJobData, BaseRepository, type ConfigManager, DateUtil, type EmailOptions, type EmailProvider, type EmailResult, type JobOptions, MongoManager, type MongooseModel, type PlaceholderType, type PostgresConnectionConfig, type QueueConfig, type SchemaDefinition, SendGridProvider, type SendGridProviderOptions, SmtpProvider, type SmtpProviderOptions, _, cacheDel, cacheGet, cacheSet, config, connectPostgres, connectRedis, createModel, createQueue, createRepository, createWorker, disconnectAllRedis, disconnectSpecificRedis, email, index as errors, getDrizzleClient, getQueue, getRedis, index$1 as logger, publish, subscribe, utils, v, validate };
+interface IJwtPayload extends JwtPayload {
+    [key: string]: any;
+}
+interface IJwtSignOptions extends SignOptions {
+}
+interface IJwtVerifyOptions extends VerifyOptions {
+}
+interface AuthenticatedRequest extends Request {
+    user?: IJwtPayload;
+}
+interface IJwtManager {
+    setSecret(secret: string): void;
+    sign(payload: object, options?: IJwtSignOptions): string;
+    verify<T = any>(token: string, options?: IJwtVerifyOptions): T;
+    decode(token: string): JwtPayload | null;
+    extract(req: Request): string | null;
+    authMiddleware(): (req: Request, res: Response, next: NextFunction) => void;
+}
+
+declare class JwtManager implements IJwtManager {
+    private _secret;
+    constructor();
+    setSecret(secret: string): void;
+    private getSecretOrThrow;
+    /**
+     * Signs a JWT token.
+     * @param payload The payload to sign.
+     * @param options Optional signing options.
+     * @returns The signed JWT token.
+     */
+    sign(payload: object, options?: IJwtSignOptions): string;
+    /**
+     * Verifies a JWT token.
+     * @param token The JWT token to verify.
+     * @param options Optional verification options.
+     * @returns The decoded JWT payload.
+     * @throws AppError if the token is invalid or secret is missing.
+     */
+    verify<T = any>(token: string, options?: IJwtVerifyOptions): T;
+    /**
+     * Decodes a JWT token without verifying its signature.
+     * @param token The JWT token to decode.
+     * @returns The decoded JWT payload or null if decoding fails.
+     */
+    decode(token: string): IJwtPayload | null;
+    /**
+     * Extracts the Bearer token from the Authorization header of an Express request.
+     * @param req The Express request object.
+     * @returns The extracted token string or null if not found.
+     */
+    extract(req: Request): string | null;
+    /**
+     * Express middleware for JWT authentication.
+     * Extracts, verifies, and attaches the user payload to the request.
+     * Throws AppError (401) if token is missing, invalid, or expired.
+     * @returns Express middleware function.
+     */
+    authMiddleware(): (req: Request, res: Response, next: NextFunction) => void;
+}
+
+declare const jwt: JwtManager;
+
+export { type AuthenticatedRequest, type BaseDocument, type BaseJobData, BaseRepository, type ConfigManager, DateUtil, type EmailOptions, type EmailProvider, type EmailResult, type IJwtManager, type IJwtPayload, type IJwtSignOptions, type IJwtVerifyOptions, type JobOptions, MongoManager, type MongooseModel, type PlaceholderType, type PostgresConnectionConfig, type QueueConfig, type SchemaDefinition, SendGridProvider, type SendGridProviderOptions, SmtpProvider, type SmtpProviderOptions, _, cacheDel, cacheGet, cacheSet, config, connectPostgres, connectRedis, createModel, createQueue, createRepository, createWorker, disconnectAllRedis, disconnectSpecificRedis, email, index as errors, getDrizzleClient, getQueue, getRedis, jwt, index$1 as logger, publish, subscribe, utils, v, validate };

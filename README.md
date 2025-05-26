@@ -346,7 +346,80 @@ console.log('Future Date (Default Timezone):', defaultDateUtil.format(futureDate
 console.log('Is Future:', defaultDateUtil.isFuture(futureDate));
 ```
 
-### 11. Lodash Utilities (`_` Object)
+### 11. JWT Module
+
+A simple, high-DX utility for signing and verifying JSON Web Tokens (JWTs) using `jsonwebtoken`. It provides a stateful secret manager and an Express-ready `authMiddleware()` that auto-authorizes and attaches the verified user payload to the request.
+
+**Features:**
+-   **Singleton `jwt` object**: All JWT functionalities are exposed via a single, pre-instantiated `jwt` object.
+-   **Stateful Secret Management**: The JWT secret is configured once globally using `jwt.setSecret()`. Subsequent `sign()` and `verify()` calls automatically use this stored secret.
+-   **Express `authMiddleware()`**: An Express middleware that extracts the Bearer token, verifies it, and attaches the decoded payload to `req.user`. It throws `AppError` (401 Unauthorized) for missing, invalid, or expired tokens.
+-   **Enhanced Error Handling**: Integrates with `@vik/baselib/errors` to throw structured `AppError` instances for JWT-related issues.
+
+**Developer Usage:**
+
+```ts
+import { jwt, AuthenticatedRequest } from '@vik/baselib/jwt';
+import { AppError, ErrorType } from '@vik/baselib/errors';
+import express from 'express'; // Assuming Express is used in your project
+
+const app = express();
+
+// 1. Configure the JWT secret once at application startup.
+jwt.setSecret(process.env.JWT_SECRET || 'your-super-secret-key');
+
+// 2. Sign a token
+const payload = { userId: '123', username: 'testuser' };
+const token = jwt.sign(payload, { expiresIn: '1h' });
+console.log('Signed Token:', token);
+
+// 3. Verify a token
+try {
+  const decodedPayload = jwt.verify(token); // Uses the globally set secret
+  console.log('Decoded Payload:', decodedPayload); // { userId: '123', username: 'testuser', iat: ..., exp: ... }
+
+  // Example of an expired token (for testing error handling)
+  // const expiredToken = jwt.sign(payload, { expiresIn: '0s' });
+  // await new Promise(resolve => setTimeout(resolve, 1000)); // Wait for token to expire
+  // jwt.verify(expiredToken);
+
+} catch (error) {
+  if (error instanceof AppError) {
+    console.error(`JWT Error (${error.type}): ${error.message}`);
+    if (error.type === ErrorType.AUTH) {
+      console.error('Authentication failed due to invalid or expired token.');
+    }
+  } else {
+    console.error('An unexpected error occurred:', error);
+  }
+}
+
+// 4. Use authMiddleware for protected routes
+app.get('/secure', jwt.authMiddleware(), (req: AuthenticatedRequest, res) => {
+  const user = req.user; // Payload attached to req.user
+  res.send({ message: 'Access granted!', user });
+});
+
+// 5. Extract token manually
+const mockRequest = { headers: { authorization: `Bearer ${token}` } } as express.Request;
+const extractedToken = jwt.extract(mockRequest);
+console.log('Extracted Token:', extractedToken);
+
+// 6. Decode token without verification
+const decodedWithoutVerify = jwt.decode(token);
+console.log('Decoded (unverified):', decodedWithoutVerify);
+
+// Example Express error handling middleware (from @vik/baselib/errors)
+app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
+  const { statusCode, message, type } = handleError(err, { logger }); // Assuming logger is available
+  res.status(statusCode).json({ message, type });
+});
+
+// Start your Express server
+// app.listen(3000, () => console.log('Server running on port 3000'));
+```
+
+### 12. Lodash Utilities (`_` Object)
 
 The `@vik/baselib/utils` module now integrates the full [Lodash](https://lodash.com/) library, exposed via a single `_` object. This provides a comprehensive set of high-performance utility functions for common programming tasks, replicating the familiar Lodash developer experience.
 

@@ -53,6 +53,7 @@ __export(index_exports, {
   getDrizzleClient: () => getDrizzleClient,
   getQueue: () => getQueue,
   getRedis: () => getRedis,
+  jwt: () => jwt2,
   logger: () => logger_exports,
   publish: () => publish,
   subscribe: () => subscribe,
@@ -879,6 +880,109 @@ var utils = {
   _
   // Export the _ object
 };
+
+// src/jwt/jwt.manager.ts
+var import_jsonwebtoken = __toESM(require("jsonwebtoken"));
+var JwtManager = class {
+  constructor() {
+    this._secret = null;
+    try {
+      const configuredSecret = config.getOptional("JWT_SECRET");
+      if (configuredSecret) {
+        this._secret = configuredSecret;
+      }
+    } catch (e) {
+    }
+  }
+  setSecret(secret) {
+    this._secret = secret;
+  }
+  getSecretOrThrow() {
+    if (!this._secret) {
+      throw new AppError("JWT secret is not set. Call jwt.setSecret() or set JWT_SECRET environment variable.", 500, "INTERNAL" /* INTERNAL */);
+    }
+    return this._secret;
+  }
+  /**
+   * Signs a JWT token.
+   * @param payload The payload to sign.
+   * @param options Optional signing options.
+   * @returns The signed JWT token.
+   */
+  sign(payload, options) {
+    const jwtSecret = this.getSecretOrThrow();
+    return import_jsonwebtoken.default.sign(payload, jwtSecret, options);
+  }
+  /**
+   * Verifies a JWT token.
+   * @param token The JWT token to verify.
+   * @param options Optional verification options.
+   * @returns The decoded JWT payload.
+   * @throws AppError if the token is invalid or secret is missing.
+   */
+  verify(token, options) {
+    const jwtSecret = this.getSecretOrThrow();
+    try {
+      return import_jsonwebtoken.default.verify(token, jwtSecret, options);
+    } catch (error) {
+      if (error instanceof import_jsonwebtoken.TokenExpiredError) {
+        throw new AppError("JWT token expired", 401, "AUTH" /* AUTH */, { originalError: error });
+      }
+      if (error instanceof import_jsonwebtoken.JsonWebTokenError) {
+        throw new AppError("Invalid JWT token", 401, "AUTH" /* AUTH */, { originalError: error });
+      }
+      throw new AppError("JWT verification failed", 500, "INTERNAL" /* INTERNAL */, { originalError: error });
+    }
+  }
+  /**
+   * Decodes a JWT token without verifying its signature.
+   * @param token The JWT token to decode.
+   * @returns The decoded JWT payload or null if decoding fails.
+   */
+  decode(token) {
+    const decoded = import_jsonwebtoken.default.decode(token);
+    if (typeof decoded === "string") {
+      return null;
+    }
+    return decoded;
+  }
+  /**
+   * Extracts the Bearer token from the Authorization header of an Express request.
+   * @param req The Express request object.
+   * @returns The extracted token string or null if not found.
+   */
+  extract(req) {
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith("Bearer ")) {
+      return authHeader.substring(7);
+    }
+    return null;
+  }
+  /**
+   * Express middleware for JWT authentication.
+   * Extracts, verifies, and attaches the user payload to the request.
+   * Throws AppError (401) if token is missing, invalid, or expired.
+   * @returns Express middleware function.
+   */
+  authMiddleware() {
+    return (req, res, next) => {
+      const token = this.extract(req);
+      if (!token) {
+        return next(new AppError("Authorization token missing", 401, "AUTH" /* AUTH */));
+      }
+      try {
+        const decoded = this.verify(token);
+        req.user = decoded;
+        next();
+      } catch (error) {
+        next(error);
+      }
+    };
+  }
+};
+
+// src/jwt/index.ts
+var jwt2 = new JwtManager();
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {
   BaseRepository,
@@ -904,6 +1008,7 @@ var utils = {
   getDrizzleClient,
   getQueue,
   getRedis,
+  jwt,
   logger,
   publish,
   subscribe,
