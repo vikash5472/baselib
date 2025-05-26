@@ -259,6 +259,28 @@ If you see this TypeScript error, but the file exists:
 
 This is usually an editor or build cache issue, not a code problem.
 
+### 9. Validator Utility (Zod-powered, One-liner)
+
+A high-DX validation utility for request bodies, queries, and more. No need to import zod separately—just use `v`.
+
+```ts
+import { v } from '@vik/baselib/validator';
+
+// One-line validation
+const input = v.validate({
+  email: v.string().email(),
+  age: v.number().int().min(18),
+}, req.body);
+
+// Use zod directly if needed
+const schema = v.object({ id: v.string().uuid() });
+const input2 = schema.parse(req.query);
+```
+
+- Throws `AppError` (400, VALIDATION) on failure, with zod error details
+- No boilerplate, fully typed result
+- Use with any framework
+
 ---
 
 ## 🧪 Testing & Coverage

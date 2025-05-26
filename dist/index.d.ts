@@ -9,6 +9,8 @@ import * as drizzle_orm from 'drizzle-orm';
 import { Table, InferModel } from 'drizzle-orm';
 export { InferModel, Table } from 'drizzle-orm';
 import { Logger } from 'pino';
+import { z } from 'zod';
+export { ZodError, ZodIssue, ZodObject, ZodRawShape, ZodTypeAny } from 'zod';
 
 declare class MongoManager {
     private static instance;
@@ -322,4 +324,10 @@ declare namespace index {
   export { index_AppError as AppError, index_ErrorType as ErrorType, index_handleError as handleError };
 }
 
-export { type BaseDocument, type BaseJobData, BaseRepository, type ConfigManager, type EmailOptions, type EmailProvider, type EmailResult, type JobOptions, MongoManager, type MongooseModel, type PlaceholderType, type PostgresConnectionConfig, type QueueConfig, type SchemaDefinition, SendGridProvider, type SendGridProviderOptions, SmtpProvider, type SmtpProviderOptions, cacheDel, cacheGet, cacheSet, config, connectPostgres, connectRedis, createModel, createQueue, createRepository, createWorker, disconnectAllRedis, disconnectSpecificRedis, email, index as errors, getDrizzleClient, getQueue, getRedis, index$1 as logger, publish, subscribe };
+declare const v: typeof z & {
+    validate: <T extends z.ZodRawShape>(schemaObject: T, data: unknown) => z.infer<z.ZodObject<T>>;
+};
+
+declare function validate<T extends z.ZodTypeAny>(schema: T, data: unknown): z.infer<T>;
+
+export { type BaseDocument, type BaseJobData, BaseRepository, type ConfigManager, type EmailOptions, type EmailProvider, type EmailResult, type JobOptions, MongoManager, type MongooseModel, type PlaceholderType, type PostgresConnectionConfig, type QueueConfig, type SchemaDefinition, SendGridProvider, type SendGridProviderOptions, SmtpProvider, type SmtpProviderOptions, cacheDel, cacheGet, cacheSet, config, connectPostgres, connectRedis, createModel, createQueue, createRepository, createWorker, disconnectAllRedis, disconnectSpecificRedis, email, index as errors, getDrizzleClient, getQueue, getRedis, index$1 as logger, publish, subscribe, v, validate };

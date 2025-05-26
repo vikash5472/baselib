@@ -41,6 +41,9 @@ importers:
       sequelize:
         specifier: ^6.37.7
         version: 6.37.7(pg@8.16.0)
+      zod:
+        specifier: ^3.25.28
+        version: 3.25.28
     devDependencies:
       '@types/jest':
         specifier: ^29.5.14
@@ -2506,6 +2509,9 @@ packages:
     resolution: {integrity: sha512-rVksvsnNCdJ/ohGc6xgPwyN8eheCxsiLM8mxuE/t/mOVqJewPuO1miLpTHQiRgTKCLexL4MeAFVagts7HmNZ2Q==}
     engines: {node: '>=10'}
 
+  zod@3.25.28:
+    resolution: {integrity: sha512-/nt/67WYKnr5by3YS7LroZJbtcCBurDKKPBPWWzaxvVCGuG/NOsiKkrjoOhI8mJ+SQUXEbUzeB3S+6XDUEEj7Q==}
+
 snapshots:
 
   '@ampproject/remapping@2.3.0':
@@ -4969,3 +4975,5 @@ snapshots:
       yargs-parser: 21.1.1
 
   yocto-queue@0.1.0: {}
+
+  zod@3.25.28: {}

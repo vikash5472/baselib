@@ -545,6 +545,29 @@ function handleError(error, options = {}) {
     traceId: options.traceId
   };
 }
+
+// src/validator/v.ts
+import { z } from "zod";
+var v = Object.assign(z, {
+  validate(schemaObject, data) {
+    const schema = z.object(schemaObject);
+    const result = schema.safeParse(data);
+    if (!result.success) {
+      throw new AppError("Validation failed", 400, "VALIDATION", result.error.flatten());
+    }
+    return result.data;
+  }
+});
+var v_default = v;
+
+// src/validator/validator.ts
+function validate(schema, data) {
+  const result = schema.safeParse(data);
+  if (!result.success) {
+    throw new AppError("Validation failed", 400, "VALIDATION", result.error.flatten());
+  }
+  return result.data;
+}
 export {
   BaseRepository,
   mongo_manager_default as MongoManager,
@@ -569,5 +592,7 @@ export {
   getRedis,
   logger_exports as logger,
   publish,
-  subscribe
+  subscribe,
+  v_default as v,
+  validate
 };

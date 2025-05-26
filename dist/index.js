@@ -53,7 +53,9 @@ __export(index_exports, {
   getRedis: () => getRedis,
   logger: () => logger_exports,
   publish: () => publish,
-  subscribe: () => subscribe
+  subscribe: () => subscribe,
+  v: () => v_default,
+  validate: () => validate
 });
 module.exports = __toCommonJS(index_exports);
 
@@ -592,6 +594,29 @@ function handleError(error, options = {}) {
     traceId: options.traceId
   };
 }
+
+// src/validator/v.ts
+var import_zod = require("zod");
+var v = Object.assign(import_zod.z, {
+  validate(schemaObject, data) {
+    const schema = import_zod.z.object(schemaObject);
+    const result = schema.safeParse(data);
+    if (!result.success) {
+      throw new AppError("Validation failed", 400, "VALIDATION", result.error.flatten());
+    }
+    return result.data;
+  }
+});
+var v_default = v;
+
+// src/validator/validator.ts
+function validate(schema, data) {
+  const result = schema.safeParse(data);
+  if (!result.success) {
+    throw new AppError("Validation failed", 400, "VALIDATION", result.error.flatten());
+  }
+  return result.data;
+}
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {
   BaseRepository,
@@ -617,5 +642,7 @@ function handleError(error, options = {}) {
   getRedis,
   logger,
   publish,
-  subscribe
+  subscribe,
+  v,
+  validate
 });
