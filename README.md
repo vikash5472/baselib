@@ -281,6 +281,125 @@ const input2 = schema.parse(req.query);
 - No boilerplate, fully typed result
 - Use with any framework
 
+### 10. Date Utilities (Timezone-Aware `DateUtil` Class)
+
+The `date.util.ts` module now provides a class-based `DateUtil` for comprehensive date and time operations with persistent timezone context. This allows you to set a timezone once and have all subsequent operations on that instance (or static calls) respect it.
+
+**Design:**
+
+```ts
+class DateUtil {
+  private static timezone: string = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+  constructor(tz?: string) {
+    if (tz) DateUtil.timezone = tz;
+  }
+
+  now(): Date {
+    // Returns current date/time in the configured timezone
+  }
+
+  format(date: Date, pattern?: string): string {
+    // Formats date in the configured timezone using date-fns patterns
+  }
+
+  getTimezone(): string {
+    // Returns the current timezone
+  }
+
+  static setTimezone(tz: string): void {
+    // Sets the global default timezone for all instances
+  }
+
+  // ... other date utility methods (addDays, isFuture, startOfDay, etc.)
+}
+```
+
+**Developer Usage:**
+
+You can instantiate `DateUtil` with a specific timezone, or rely on the globally set default.
+
+```ts
+// file-1.ts
+import { DateUtil } from '@vik/baselib/utils';
+
+// Instantiate with a specific timezone, which also sets it globally
+const istDateUtil = new DateUtil('Asia/Kolkata');
+console.log('IST Now:', istDateUtil.now());
+console.log('IST Formatted:', istDateUtil.format(new Date(), 'yyyy-MM-dd HH:mm:ss zzz'));
+
+// You can also set the timezone statically
+DateUtil.setTimezone('UTC');
+console.log('Current Global Timezone:', istDateUtil.getTimezone()); // Will be UTC now
+
+// file-2.ts
+import { DateUtil } from '@vik/baselib/utils';
+
+// Instantiate without a timezone; it will use the globally set timezone (e.g., 'UTC' from file-1)
+const defaultDateUtil = new DateUtil();
+console.log('Default Timezone Now:', defaultDateUtil.now());
+console.log('Default Timezone Formatted:', defaultDateUtil.format(new Date(), 'yyyy-MM-dd HH:mm:ss zzz'));
+
+// All other date utility methods (addDays, isFuture, startOfDay, etc.) are available as methods
+const futureDate = defaultDateUtil.addDays(new Date(), 7);
+console.log('Future Date (Default Timezone):', defaultDateUtil.format(futureDate));
+console.log('Is Future:', defaultDateUtil.isFuture(futureDate));
+```
+
+### 11. Lodash Utilities (`_` Object)
+
+The `@vik/baselib/utils` module now integrates the full [Lodash](https://lodash.com/) library, exposed via a single `_` object. This provides a comprehensive set of high-performance utility functions for common programming tasks, replicating the familiar Lodash developer experience.
+
+Additionally, the `_` object can be extended with custom, project-specific helpers directly within `src/utils/_utils.ts`.
+
+**Custom Extensions Included:**
+
+*   `_.sleep(ms: number)`: Returns a Promise that resolves after `ms` milliseconds.
+*   `_.uuid()`: Generates a UUID (uses `crypto.randomUUID` if available, falls back to a less secure method).
+*   `_.retry<T>(fn: () => Promise<T>, times: number, delay?: number)`: Retries an async function `fn` a specified number of `times` with an optional `delay` between retries.
+
+**Developer Usage:**
+
+```ts
+import { _ } from '@vik/baselib/utils';
+
+// Use any standard Lodash function
+const user = { id: 1, name: 'Alice', email: 'alice@example.com' };
+const pickedUser = _.pick(user, ['id', 'name']);
+console.log('Picked User:', pickedUser); // { id: 1, name: 'Alice' }
+
+console.log('Is Empty Array:', _.isEmpty([])); // true
+console.log('Unique Array:', _.uniq([1, 2, 2, 3])); // [1, 2, 3]
+
+// Use custom extended functions
+console.log('Generated UUID:', _.uuid());
+
+async function fetchData() {
+  console.log('Attempting to fetch data...');
+  // Simulate a flaky API call
+  if (Math.random() > 0.5) {
+    throw new Error('Network error');
+  }
+  return 'Data fetched successfully!';
+}
+
+(async () => {
+  try {
+    const result = await _.retry(fetchData, 3, 100);
+    console.log('Retry Result:', result);
+  } catch (error: any) {
+    console.error('Retry Failed:', error.message);
+  }
+})();
+
+// Example of using sleep
+(async () => {
+  console.log('Waiting for 1 second...');
+  await _.sleep(1000);
+  console.log('1 second passed!');
+})();
+```
+
 ---
 
 ## 🧪 Testing & Coverage

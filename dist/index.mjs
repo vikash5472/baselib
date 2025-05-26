@@ -556,6 +556,9 @@ var v = Object.assign(z, {
       throw new AppError("Validation failed", 400, "VALIDATION", result.error.flatten());
     }
     return result.data;
+  },
+  isEmail(input) {
+    return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(input);
   }
 });
 var v_default = v;
@@ -569,218 +572,284 @@ function validate(schema, data) {
   return result.data;
 }
 
-// src/utils/object.utils.ts
-var object_utils_exports = {};
-__export(object_utils_exports, {
-  deepClone: () => deepClone,
-  omit: () => omit,
-  pick: () => pick
-});
-function pick(obj, keys) {
-  const result = {};
-  for (const key of keys) {
-    if (key in obj) result[key] = obj[key];
-  }
-  return result;
-}
-function omit(obj, keys) {
-  const result = { ...obj };
-  for (const key of keys) {
-    delete result[key];
-  }
-  return result;
-}
-function deepClone(obj) {
-  return JSON.parse(JSON.stringify(obj));
-}
-
-// src/utils/string.utils.ts
-var string_utils_exports = {};
-__export(string_utils_exports, {
-  capitalize: () => capitalize,
-  slugify: () => slugify,
-  truncate: () => truncate
-});
-function slugify(input) {
-  return input.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
-}
-function capitalize(str) {
-  return str.charAt(0).toUpperCase() + str.slice(1);
-}
-function truncate(str, length) {
-  if (str.length <= length) return str;
-  return str.slice(0, length) + "...";
-}
-
-// src/utils/date.utils.ts
-var date_utils_exports = {};
-__export(date_utils_exports, {
-  addDays: () => addDays,
-  addHours: () => addHours,
-  addMinutes: () => addMinutes,
-  compareDates: () => compareDates,
-  daysBetween: () => daysBetween,
-  endOfDay: () => endOfDay,
-  formatDate: () => formatDate,
-  fromUnix: () => fromUnix,
-  isFuture: () => isFuture,
-  isLeapYear: () => isLeapYear,
-  isPast: () => isPast,
-  isSameDay: () => isSameDay,
-  isToday: () => isToday,
-  now: () => now,
-  startOfDay: () => startOfDay,
-  subDays: () => subDays,
-  subHours: () => subHours,
-  subMinutes: () => subMinutes,
-  toUnix: () => toUnix
-});
-function now() {
-  return /* @__PURE__ */ new Date();
-}
-function formatDate(date, format) {
-  if (!format) return date.toISOString();
-  if (format === "YYYY-MM-DD") {
-    return date.toISOString().slice(0, 10);
-  }
-  return date.toISOString();
-}
-function addDays(date, days) {
-  const d = new Date(date);
-  d.setDate(d.getDate() + days);
-  return d;
-}
-function subDays(date, days) {
-  const d = new Date(date);
-  d.setDate(d.getDate() - days);
-  return d;
-}
-function addHours(date, hours) {
-  const d = new Date(date);
-  d.setHours(d.getHours() + hours);
-  return d;
-}
-function subHours(date, hours) {
-  const d = new Date(date);
-  d.setHours(d.getHours() - hours);
-  return d;
-}
-function addMinutes(date, minutes) {
-  const d = new Date(date);
-  d.setMinutes(d.getMinutes() + minutes);
-  return d;
-}
-function subMinutes(date, minutes) {
-  const d = new Date(date);
-  d.setMinutes(d.getMinutes() - minutes);
-  return d;
-}
-function isFuture(date) {
-  return date.getTime() > Date.now();
-}
-function isPast(date) {
-  return date.getTime() < Date.now();
-}
-function isToday(date) {
-  const today = /* @__PURE__ */ new Date();
-  return date.getDate() === today.getDate() && date.getMonth() === today.getMonth() && date.getFullYear() === today.getFullYear();
-}
-function isSameDay(a, b) {
-  return a.getDate() === b.getDate() && a.getMonth() === b.getMonth() && a.getFullYear() === b.getFullYear();
-}
-function startOfDay(date) {
-  const d = new Date(date);
-  d.setHours(0, 0, 0, 0);
-  return d;
-}
-function endOfDay(date) {
-  const d = new Date(date);
-  d.setHours(23, 59, 59, 999);
-  return d;
-}
-function compareDates(a, b) {
-  return a.getTime() - b.getTime();
-}
-function daysBetween(a, b) {
-  const diff = Math.abs(startOfDay(a).getTime() - startOfDay(b).getTime());
-  return Math.floor(diff / (1e3 * 60 * 60 * 24));
-}
-function toUnix(date) {
-  return Math.floor(date.getTime() / 1e3);
-}
-function fromUnix(unix) {
-  return new Date(unix * 1e3);
-}
-function isLeapYear(date) {
-  const year = date.getFullYear();
-  return year % 4 === 0 && year % 100 !== 0 || year % 400 === 0;
-}
-
-// src/utils/type.utils.ts
-var type_utils_exports = {};
-__export(type_utils_exports, {
-  isEmail: () => isEmail,
-  isEmpty: () => isEmpty,
-  isObject: () => isObject
-});
-function isObject(input) {
-  return typeof input === "object" && input !== null && !Array.isArray(input);
-}
-function isEmpty(input) {
-  if (input == null) return true;
-  if (typeof input === "string" || Array.isArray(input)) return input.length === 0;
-  if (isObject(input)) return Object.keys(input).length === 0;
-  return false;
-}
-function isEmail(input) {
-  return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(input);
-}
-
-// src/utils/general.utils.ts
-var general_utils_exports = {};
-__export(general_utils_exports, {
-  retry: () => retry,
-  sleep: () => sleep,
-  uuid: () => uuid
-});
-function sleep(ms) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-async function retry(fn, times, delay = 0) {
-  let lastErr;
-  for (let i = 0; i < times; i++) {
-    try {
-      return await fn();
-    } catch (err) {
-      lastErr = err;
-      if (delay) await sleep(delay);
+// src/utils/date.util.ts
+import {
+  addDays as dfAddDays,
+  subDays as dfSubDays,
+  addHours as dfAddHours,
+  subHours as dfSubHours,
+  addMinutes as dfAddMinutes,
+  subMinutes as dfSubMinutes,
+  isFuture as dfIsFuture,
+  isPast as dfIsPast,
+  isSameDay as dfIsSameDay,
+  startOfDay as dfStartOfDay,
+  endOfDay as dfEndOfDay,
+  getUnixTime,
+  fromUnixTime,
+  isLeapYear as dfIsLeapYear,
+  compareAsc
+} from "date-fns";
+import { toZonedTime, formatInTimeZone, fromZonedTime } from "date-fns-tz";
+var TIMEZONE_MAP = {
+  UTC: "Etc/UTC",
+  IST: "Asia/Kolkata"
+  // Asia/Kolkata is the IANA timezone for IST
+};
+var _DateUtil = class _DateUtil {
+  /**
+   * Instantiates DateUtil. If a timezone is provided, it sets it as the static default.
+   * @param tz Optional timezone string (e.g., 'UTC', 'IST', 'America/New_York').
+   */
+  constructor(tz) {
+    if (tz) {
+      _DateUtil.setTimezone(tz);
     }
   }
-  throw lastErr;
-}
-function uuid() {
-  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
-    return crypto.randomUUID();
+  /**
+   * Sets the global default timezone for all DateUtil instances.
+   * @param tz The timezone string (e.g., 'UTC', 'IST', 'America/New_York').
+   */
+  static setTimezone(tz) {
+    _DateUtil.timezone = TIMEZONE_MAP[tz] || tz;
   }
-  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
-    const r = Math.random() * 16 | 0, v2 = c === "x" ? r : r & 3 | 8;
-    return v2.toString(16);
-  });
-}
+  /**
+   * Gets the currently configured global timezone.
+   * @returns The current timezone string.
+   */
+  getTimezone() {
+    return _DateUtil.timezone;
+  }
+  /**
+   * Returns the current date and time in the configured timezone.
+   * @returns A Date object representing the current time in the configured timezone.
+   */
+  now() {
+    const date = /* @__PURE__ */ new Date();
+    return toZonedTime(date, _DateUtil.timezone);
+  }
+  /**
+   * Formats a date into a string in the configured timezone.
+   * @param date The date to format.
+   * @param pattern The format string (e.g., 'yyyy-MM-dd HH:mm:ss'). Defaults to 'yyyy-MM-dd HH:mm:ss'.
+   * @returns The formatted date string.
+   */
+  format(date, pattern = "yyyy-MM-dd HH:mm:ss") {
+    return formatInTimeZone(date, _DateUtil.timezone, pattern);
+  }
+  /**
+   * Converts a date to a Date object representing the same instant in the configured timezone.
+   * This is useful for ensuring date operations are performed relative to a specific timezone.
+   * @param date The date to convert.
+   * @returns A new Date object representing the same instant but interpreted in the target timezone.
+   */
+  convertToTimeZone(date) {
+    return toZonedTime(date, _DateUtil.timezone);
+  }
+  /**
+   * Adds a specified number of days to a date.
+   * @param date The base date.
+   * @param days The number of days to add.
+   * @returns A new Date object.
+   */
+  addDays(date, days) {
+    return dfAddDays(date, days);
+  }
+  /**
+   * Subtracts a specified number of days from a date.
+   * @param date The base date.
+   * @param days The number of days to subtract.
+   * @returns A new Date object.
+   */
+  subDays(date, days) {
+    return dfSubDays(date, days);
+  }
+  /**
+   * Adds a specified number of hours to a date.
+   * @param date The base date.
+   * @param hours The number of hours to add.
+   * @returns A new Date object.
+   */
+  addHours(date, hours) {
+    return dfAddHours(date, hours);
+  }
+  /**
+   * Subtracts a specified number of hours from a date.
+   * @param date The base date.
+   * @param hours The number of hours to subtract.
+   * @returns A new Date object.
+   */
+  subHours(date, hours) {
+    return dfSubHours(date, hours);
+  }
+  /**
+   * Adds a specified number of minutes to a date.
+   * @param date The base date.
+   * @param minutes The number of minutes to add.
+   * @returns A new Date object.
+   */
+  addMinutes(date, minutes) {
+    return dfAddMinutes(date, minutes);
+  }
+  /**
+   * Subtracts a specified number of minutes from a date.
+   * @param date The base date.
+   * @param minutes The number of minutes to subtract.
+   * @returns A new Date object.
+   */
+  subMinutes(date, minutes) {
+    return dfSubMinutes(date, minutes);
+  }
+  /**
+   * Checks if a date is in the future relative to the current time in the configured timezone.
+   * @param date The date to check.
+   * @returns True if the date is in the future, false otherwise.
+   */
+  isFuture(date) {
+    const zonedDate = toZonedTime(date, _DateUtil.timezone);
+    return dfIsFuture(zonedDate);
+  }
+  /**
+   * Checks if a date is in the past relative to the current time in the configured timezone.
+   * @param date The date to check.
+   * @returns True if the date is in the past, false otherwise.
+   */
+  isPast(date) {
+    const zonedDate = toZonedTime(date, _DateUtil.timezone);
+    return dfIsPast(zonedDate);
+  }
+  /**
+   * Checks if a date is today in the configured timezone.
+   * @param date The date to check.
+   * @returns True if the date is today, false otherwise.
+   */
+  isToday(date) {
+    const zonedDate = toZonedTime(date, _DateUtil.timezone);
+    const todayZoned = toZonedTime(/* @__PURE__ */ new Date(), _DateUtil.timezone);
+    return dfIsSameDay(zonedDate, todayZoned);
+  }
+  /**
+   * Checks if two dates are on the same day in the configured timezone.
+   * @param a The first date.
+   * @param b The second date.
+   * @returns True if the dates are on the same day, false otherwise.
+   */
+  isSameDay(a, b) {
+    const zonedA = toZonedTime(a, _DateUtil.timezone);
+    const zonedB = toZonedTime(b, _DateUtil.timezone);
+    return dfIsSameDay(zonedA, zonedB);
+  }
+  /**
+   * Returns a new Date object representing the start of the day for the given date in the configured timezone.
+   * @param date The date.
+   * @returns A new Date object set to the start of the day.
+   */
+  startOfDay(date) {
+    const zonedDate = toZonedTime(date, _DateUtil.timezone);
+    const start = dfStartOfDay(zonedDate);
+    return fromZonedTime(start, _DateUtil.timezone);
+  }
+  /**
+   * Returns a new Date object representing the end of the day for the given date in the configured timezone.
+   * @param date The date.
+   * @returns A new Date object set to the end of the day.
+   */
+  endOfDay(date) {
+    const zonedDate = toZonedTime(date, _DateUtil.timezone);
+    const end = dfEndOfDay(zonedDate);
+    return fromZonedTime(end, _DateUtil.timezone);
+  }
+  /**
+   * Compares two dates.
+   * @param a The first date.
+   * @param b The second date.
+   * @returns A number indicating the comparison result (negative if a < b, positive if a > b, 0 if equal).
+   */
+  compareDates(a, b) {
+    return compareAsc(a, b);
+  }
+  /**
+   * Calculates the number of full days between two dates.
+   * @param a The first date.
+   * @param b The second date.
+   * @returns The number of full days between the dates.
+   */
+  daysBetween(a, b) {
+    const diff = Math.abs(dfStartOfDay(a).getTime() - dfStartOfDay(b).getTime());
+    return Math.floor(diff / (1e3 * 60 * 60 * 24));
+  }
+  /**
+   * Converts a date to a Unix timestamp (seconds since epoch).
+   * @param date The date to convert.
+   * @returns The Unix timestamp.
+   */
+  toUnix(date) {
+    return getUnixTime(date);
+  }
+  /**
+   * Converts a Unix timestamp (seconds since epoch) to a Date object.
+   * @param unix The Unix timestamp.
+   * @returns A new Date object.
+   */
+  fromUnix(unix) {
+    return fromUnixTime(unix);
+  }
+  /**
+   * Checks if the year of a given date is a leap year.
+   * @param date The date to check.
+   * @returns True if the year is a leap year, false otherwise.
+   */
+  isLeapYear(date) {
+    return dfIsLeapYear(date);
+  }
+};
+_DateUtil.timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+var DateUtil = _DateUtil;
+
+// src/utils/_utils.ts
+import lodash from "lodash";
+Object.assign(lodash, {
+  sleep: (ms) => new Promise((res) => setTimeout(res, ms)),
+  // Add a simple uuid generator, checking for crypto.randomUUID for browser/Node 14+ compatibility
+  uuid: () => {
+    if (typeof crypto !== "undefined" && crypto.randomUUID) {
+      return crypto.randomUUID();
+    }
+    return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, function(c) {
+      const r = Math.random() * 16 | 0, v2 = c == "x" ? r : r & 3 | 8;
+      return v2.toString(16);
+    });
+  },
+  // Add retry function
+  retry: async (fn, times, delay = 0) => {
+    let lastErr;
+    for (let i = 0; i < times; i++) {
+      try {
+        return await fn();
+      } catch (err) {
+        lastErr = err;
+        if (delay) await lodash.sleep(delay);
+      }
+    }
+    throw lastErr;
+  }
+});
+var _ = lodash;
 
 // src/utils/index.ts
 var utils = {
-  ...object_utils_exports,
-  ...string_utils_exports,
-  ...date_utils_exports,
-  ...type_utils_exports,
-  ...general_utils_exports
+  DateUtil,
+  // Export the class directly
+  _
+  // Export the _ object
 };
 export {
   BaseRepository,
+  DateUtil,
   mongo_manager_default as MongoManager,
   SendGridProvider,
   SmtpProvider,
+  _,
   cacheDel,
   cacheGet,
   cacheSet,
@@ -791,21 +860,16 @@ export {
   createQueue,
   createRepository,
   createWorker,
-  date_utils_exports as dateUtils,
   disconnectAllRedis,
   disconnectSpecificRedis,
   email,
   errors_exports as errors,
-  general_utils_exports as generalUtils,
   getDrizzleClient,
   getQueue,
   getRedis,
   logger_exports as logger,
-  object_utils_exports as objectUtils,
   publish,
-  string_utils_exports as stringUtils,
   subscribe,
-  type_utils_exports as typeUtils,
   utils,
   v_default as v,
   validate

@@ -1,19 +1,10 @@
-export * as objectUtils from './object.utils';
-export * as stringUtils from './string.utils';
-export * as dateUtils from './date.utils';
-export * as typeUtils from './type.utils';
-export * as generalUtils from './general.utils';
+export { DateUtil } from './date.util';
+export { _ } from './_utils'; // Re-export _ from _utils.ts
 
-import * as objectUtils from './object.utils';
-import * as stringUtils from './string.utils';
-import * as dateUtils from './date.utils';
-import * as typeUtils from './type.utils';
-import * as generalUtils from './general.utils';
+import { DateUtil } from './date.util'; // Import the class
+import { _ } from './_utils'; // Import _ for the utils object
 
 export const utils = {
-  ...objectUtils,
-  ...stringUtils,
-  ...dateUtils,
-  ...typeUtils,
-  ...generalUtils,
-}; 
+  DateUtil, // Export the class directly
+  _, // Export the _ object
+};
