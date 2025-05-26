@@ -353,9 +353,103 @@ var config = {
     return schema.parse(process.env);
   }
 };
+
+// src/email/providers/sendgrid.provider.ts
+import sgMail from "@sendgrid/mail";
+var SendGridProvider = class {
+  constructor(options) {
+    this.options = options;
+    sgMail.setApiKey(options.apiKey);
+    this.from = options.from;
+  }
+  async sendEmail(options) {
+    try {
+      const msg = {
+        to: options.to,
+        from: options.from || this.from,
+        subject: options.subject,
+        text: options.text,
+        html: options.html,
+        cc: options.cc,
+        bcc: options.bcc,
+        attachments: options.attachments
+      };
+      const [response] = await sgMail.send(msg);
+      const messageId = response.headers["x-message-id"] || response.headers["X-Message-Id"];
+      return { success: true, messageId };
+    } catch (error) {
+      return { success: false, error };
+    }
+  }
+};
+
+// src/email/providers/smtp.provider.ts
+import nodemailer from "nodemailer";
+var SmtpProvider = class {
+  constructor(options) {
+    var _a;
+    this.transporter = nodemailer.createTransport({
+      host: options.host,
+      port: options.port,
+      secure: (_a = options.secure) != null ? _a : false,
+      auth: options.auth
+    });
+    this.defaultFrom = options.from;
+  }
+  async sendEmail(options) {
+    try {
+      const info = await this.transporter.sendMail({
+        from: options.from || this.defaultFrom,
+        to: options.to,
+        subject: options.subject,
+        text: options.text,
+        html: options.html,
+        cc: options.cc,
+        bcc: options.bcc,
+        attachments: options.attachments
+      });
+      return { success: true, messageId: info.messageId };
+    } catch (error) {
+      return { success: false, error };
+    }
+  }
+};
+
+// src/email/email.manager.ts
+var provider = null;
+var secondaryProvider = null;
+var email = {
+  setProvider(p) {
+    provider = p;
+  },
+  setSecondaryProvider(p) {
+    secondaryProvider = p;
+  },
+  setDefaultSendGrid(options) {
+    provider = new SendGridProvider(options);
+  },
+  setSecondarySmtp(options) {
+    secondaryProvider = new SmtpProvider(options);
+  },
+  async sendEmail(options) {
+    if (!provider) {
+      throw new Error("No email provider set. Call email.setProvider(...) or email.setDefaultSendGrid(...) first.");
+    }
+    try {
+      return await provider.sendEmail(options);
+    } catch (err) {
+      if (secondaryProvider) {
+        return secondaryProvider.sendEmail(options);
+      }
+      throw err;
+    }
+  }
+};
 export {
   BaseRepository,
   mongo_manager_default as MongoManager,
+  SendGridProvider,
+  SmtpProvider,
   cacheDel,
   cacheGet,
   cacheSet,
@@ -368,6 +462,7 @@ export {
   createWorker,
   disconnectAllRedis,
   disconnectSpecificRedis,
+  email,
   getDrizzleClient,
   getQueue,
   getRedis,

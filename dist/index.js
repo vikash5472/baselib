@@ -32,6 +32,8 @@ var index_exports = {};
 __export(index_exports, {
   BaseRepository: () => BaseRepository,
   MongoManager: () => mongo_manager_default,
+  SendGridProvider: () => SendGridProvider,
+  SmtpProvider: () => SmtpProvider,
   cacheDel: () => cacheDel,
   cacheGet: () => cacheGet,
   cacheSet: () => cacheSet,
@@ -44,6 +46,7 @@ __export(index_exports, {
   createWorker: () => createWorker,
   disconnectAllRedis: () => disconnectAllRedis,
   disconnectSpecificRedis: () => disconnectSpecificRedis,
+  email: () => email,
   getDrizzleClient: () => getDrizzleClient,
   getQueue: () => getQueue,
   getRedis: () => getRedis,
@@ -400,10 +403,104 @@ var config = {
     return schema.parse(process.env);
   }
 };
+
+// src/email/providers/sendgrid.provider.ts
+var import_mail = __toESM(require("@sendgrid/mail"));
+var SendGridProvider = class {
+  constructor(options) {
+    this.options = options;
+    import_mail.default.setApiKey(options.apiKey);
+    this.from = options.from;
+  }
+  async sendEmail(options) {
+    try {
+      const msg = {
+        to: options.to,
+        from: options.from || this.from,
+        subject: options.subject,
+        text: options.text,
+        html: options.html,
+        cc: options.cc,
+        bcc: options.bcc,
+        attachments: options.attachments
+      };
+      const [response] = await import_mail.default.send(msg);
+      const messageId = response.headers["x-message-id"] || response.headers["X-Message-Id"];
+      return { success: true, messageId };
+    } catch (error) {
+      return { success: false, error };
+    }
+  }
+};
+
+// src/email/providers/smtp.provider.ts
+var import_nodemailer = __toESM(require("nodemailer"));
+var SmtpProvider = class {
+  constructor(options) {
+    var _a;
+    this.transporter = import_nodemailer.default.createTransport({
+      host: options.host,
+      port: options.port,
+      secure: (_a = options.secure) != null ? _a : false,
+      auth: options.auth
+    });
+    this.defaultFrom = options.from;
+  }
+  async sendEmail(options) {
+    try {
+      const info = await this.transporter.sendMail({
+        from: options.from || this.defaultFrom,
+        to: options.to,
+        subject: options.subject,
+        text: options.text,
+        html: options.html,
+        cc: options.cc,
+        bcc: options.bcc,
+        attachments: options.attachments
+      });
+      return { success: true, messageId: info.messageId };
+    } catch (error) {
+      return { success: false, error };
+    }
+  }
+};
+
+// src/email/email.manager.ts
+var provider = null;
+var secondaryProvider = null;
+var email = {
+  setProvider(p) {
+    provider = p;
+  },
+  setSecondaryProvider(p) {
+    secondaryProvider = p;
+  },
+  setDefaultSendGrid(options) {
+    provider = new SendGridProvider(options);
+  },
+  setSecondarySmtp(options) {
+    secondaryProvider = new SmtpProvider(options);
+  },
+  async sendEmail(options) {
+    if (!provider) {
+      throw new Error("No email provider set. Call email.setProvider(...) or email.setDefaultSendGrid(...) first.");
+    }
+    try {
+      return await provider.sendEmail(options);
+    } catch (err) {
+      if (secondaryProvider) {
+        return secondaryProvider.sendEmail(options);
+      }
+      throw err;
+    }
+  }
+};
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {
   BaseRepository,
   MongoManager,
+  SendGridProvider,
+  SmtpProvider,
   cacheDel,
   cacheGet,
   cacheSet,
@@ -416,6 +513,7 @@ var config = {
   createWorker,
   disconnectAllRedis,
   disconnectSpecificRedis,
+  email,
   getDrizzleClient,
   getQueue,
   getRedis,

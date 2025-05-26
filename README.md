@@ -150,6 +150,47 @@ await UserRepo.insert({ name: 'Vikash' });
 const list = await UserRepo.findAll();
 ```
 
+### 6. Email Module (SendGrid Default, SMTP Fallback)
+
+Send emails with a unified API and automatic fallback from SendGrid (default) to SMTP (nodemailer) if SendGrid fails.
+
+```ts
+import { email } from '@vik/baselib/email';
+
+// 1. Set SendGrid as the default provider (required)
+email.setDefaultSendGrid({
+  apiKey: 'SENDGRID_API_KEY',
+  from: 'noreply@example.com',
+});
+
+// 2. Optionally set SMTP as the secondary (fallback) provider
+email.setSecondarySmtp({
+  host: 'smtp.example.com',
+  port: 587,
+  auth: { user: 'user', pass: 'pass' },
+  from: 'noreply@example.com',
+});
+
+// 3. Send an email (uses SendGrid, falls back to SMTP if needed)
+await email.sendEmail({
+  to: 'user@example.com',
+  subject: 'Welcome!',
+  text: 'Hello world',
+  html: '<b>Hello world</b>',
+});
+```
+
+- **Default:** SendGrid is used for all emails.
+- **Fallback:** If SendGrid fails (e.g., network error, quota), SMTP is automatically tried if configured.
+- **Custom:** You can use `email.setProvider(...)` and `email.setSecondaryProvider(...)` for custom providers.
+
+> **Dependencies:**
+> - For SendGrid, `@sendgrid/mail` is required (already included).
+> - For SMTP, `nodemailer` and `@types/nodemailer` are required (already included).
+> - For other providers, install their respective SDKs if you implement them.
+
+> You can add more providers (Mailgun, SES, etc.) by implementing the `EmailProvider` interface.
+
 ---
 
 ## 🧪 Testing & Coverage

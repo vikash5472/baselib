@@ -31,11 +31,14 @@
     "typescript": "^5.4.5"
   },
   "dependencies": {
+    "@sendgrid/mail": "^8.1.5",
+    "@types/nodemailer": "^6.4.17",
     "bullmq": "^5.53.0",
     "dotenv": "^16.5.0",
     "drizzle-orm": "^0.43.1",
     "ioredis": "^5.6.1",
     "mongoose": "^8.4.0",
+    "nodemailer": "^7.0.3",
     "pg": "^8.16.0",
     "sequelize": "^6.37.7"
   }

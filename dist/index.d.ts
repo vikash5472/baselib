@@ -199,4 +199,63 @@ interface ConfigManager {
     }): T;
 }
 
-export { type BaseDocument, type BaseJobData, BaseRepository, type ConfigManager, type JobOptions, MongoManager, type MongooseModel, type PlaceholderType, type PostgresConnectionConfig, type QueueConfig, type SchemaDefinition, cacheDel, cacheGet, cacheSet, config, connectPostgres, connectRedis, createModel, createQueue, createRepository, createWorker, disconnectAllRedis, disconnectSpecificRedis, getDrizzleClient, getQueue, getRedis, publish, subscribe };
+interface EmailOptions {
+    to: string | string[];
+    subject: string;
+    text?: string;
+    html?: string;
+    from?: string;
+    cc?: string | string[];
+    bcc?: string | string[];
+    attachments?: Array<{
+        filename: string;
+        content: Buffer | string;
+        contentType?: string;
+    }>;
+}
+interface EmailResult {
+    success: boolean;
+    messageId?: string;
+    error?: any;
+}
+interface EmailProvider {
+    sendEmail(options: EmailOptions): Promise<EmailResult>;
+}
+
+interface SendGridProviderOptions {
+    apiKey: string;
+    from?: string;
+}
+declare class SendGridProvider implements EmailProvider {
+    private options;
+    private from?;
+    constructor(options: SendGridProviderOptions);
+    sendEmail(options: EmailOptions): Promise<EmailResult>;
+}
+
+interface SmtpProviderOptions {
+    host: string;
+    port: number;
+    secure?: boolean;
+    auth?: {
+        user: string;
+        pass: string;
+    };
+    from?: string;
+}
+declare class SmtpProvider implements EmailProvider {
+    private transporter;
+    private defaultFrom?;
+    constructor(options: SmtpProviderOptions);
+    sendEmail(options: EmailOptions): Promise<EmailResult>;
+}
+
+declare const email: {
+    setProvider(p: EmailProvider): void;
+    setSecondaryProvider(p: EmailProvider): void;
+    setDefaultSendGrid(options: SendGridProviderOptions): void;
+    setSecondarySmtp(options: SmtpProviderOptions): void;
+    sendEmail(options: EmailOptions): Promise<EmailResult>;
+};
+
+export { type BaseDocument, type BaseJobData, BaseRepository, type ConfigManager, type EmailOptions, type EmailProvider, type EmailResult, type JobOptions, MongoManager, type MongooseModel, type PlaceholderType, type PostgresConnectionConfig, type QueueConfig, type SchemaDefinition, SendGridProvider, type SendGridProviderOptions, SmtpProvider, type SmtpProviderOptions, cacheDel, cacheGet, cacheSet, config, connectPostgres, connectRedis, createModel, createQueue, createRepository, createWorker, disconnectAllRedis, disconnectSpecificRedis, email, getDrizzleClient, getQueue, getRedis, publish, subscribe };
