@@ -15,6 +15,7 @@ import * as lodash from 'lodash';
 import lodash__default from 'lodash';
 import { Request, Response, NextFunction } from 'express';
 import { JwtPayload, SignOptions, VerifyOptions } from 'jsonwebtoken';
+import { Readable } from 'stream';
 
 declare class MongoManager {
     private static instance;
@@ -558,4 +559,66 @@ declare class JwtManager implements IJwtManager {
 
 declare const jwt: JwtManager;
 
-export { type AuthenticatedRequest, type BaseDocument, type BaseJobData, BaseRepository, type ConfigManager, DateUtil, type EmailOptions, type EmailProvider, type EmailResult, type IJwtManager, type IJwtPayload, type IJwtSignOptions, type IJwtVerifyOptions, type JobOptions, MongoManager, type MongooseModel, type PlaceholderType, type PostgresConnectionConfig, type QueueConfig, type SchemaDefinition, SendGridProvider, type SendGridProviderOptions, SmtpProvider, type SmtpProviderOptions, _, cacheDel, cacheGet, cacheSet, config, connectPostgres, connectRedis, createModel, createQueue, createRepository, createWorker, disconnectAllRedis, disconnectSpecificRedis, email, index as errors, getDrizzleClient, getQueue, getRedis, jwt, index$1 as logger, publish, subscribe, utils, v, validate };
+type CloudProvider = 'aws' | 'gcp' | 'azure';
+interface AwsCredentials {
+    accessKeyId: string;
+    secretAccessKey: string;
+    region: string;
+}
+interface GcpCredentials {
+    gcpKeyFilePath?: string;
+    projectId?: string;
+}
+interface AzureCredentials {
+    azureConnectionString: string;
+}
+type SpecificCredentials = ({
+    provider: 'aws';
+} & AwsCredentials) | ({
+    provider: 'gcp';
+} & GcpCredentials) | ({
+    provider: 'azure';
+} & AzureCredentials);
+interface GlobalUploadConfig {
+    defaultProvider: CloudProvider;
+    credentials: SpecificCredentials;
+}
+interface UploadOptions {
+    provider?: CloudProvider;
+    key: string;
+    mimeType?: string;
+    bucket?: string;
+    isRequired?: boolean;
+    credentials?: SpecificCredentials;
+}
+interface PresignOptions {
+    provider?: CloudProvider;
+    key: string;
+    mimeType?: string;
+    bucket?: string;
+    credentials?: SpecificCredentials;
+    expiresIn?: number;
+}
+interface UploadResult {
+    url: string;
+    key: string;
+    bucket?: string;
+    provider: CloudProvider;
+}
+
+declare class UploadManager {
+    private globalConfig;
+    private adapters;
+    constructor();
+    configure(config: GlobalUploadConfig): void;
+    private getAdapter;
+    private resolveOptions;
+    uploadFile(bufferOrStream: Buffer | Readable, options: UploadOptions): Promise<UploadResult>;
+    generatePresignedUrl(options: PresignOptions): Promise<{
+        url: string;
+        fields?: any;
+    }>;
+}
+declare const uploadManager: UploadManager;
+
+export { type AuthenticatedRequest, type BaseDocument, type BaseJobData, BaseRepository, type CloudProvider, type ConfigManager, DateUtil, type EmailOptions, type EmailProvider, type EmailResult, type IJwtManager, type IJwtPayload, type IJwtSignOptions, type IJwtVerifyOptions, type JobOptions, MongoManager, type MongooseModel, type PlaceholderType, type PostgresConnectionConfig, type PresignOptions, type QueueConfig, type SchemaDefinition, SendGridProvider, type SendGridProviderOptions, SmtpProvider, type SmtpProviderOptions, type UploadOptions, type UploadResult, _, cacheDel, cacheGet, cacheSet, config, connectPostgres, connectRedis, createModel, createQueue, createRepository, createWorker, disconnectAllRedis, disconnectSpecificRedis, email, index as errors, getDrizzleClient, getQueue, getRedis, jwt, index$1 as logger, publish, subscribe, uploadManager, utils, v, validate };

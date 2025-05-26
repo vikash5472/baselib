@@ -6,6 +6,7 @@ A private, modular TypeScript library for backend Node.js projects, providing re
 
 ## 🚀 Features
 - **Config utility**: Lazy, on-demand env loading, no side effects until used
+- **Cloud-agnostic file upload**: Unified API for AWS S3, GCS, Azure Blob, with presigned URLs and lazy loading.
 - **MongoDB**: Connection manager, schema/model/repository pattern, multi-DB support
 - **Redis**: Multi-client manager, cache, pub/sub utilities
 - **Queue**: BullMQ-based, strongly typed jobs, works with named Redis clients
@@ -419,7 +420,169 @@ app.use((err: Error, req: express.Request, res: express.Response, next: express.
 // app.listen(3000, () => console.log('Server running on port 3000'));
 ```
 
-### 12. Lodash Utilities (`_` Object)
+### 12. File Upload Utility (Cloud-Agnostic)
+
+A unified, cloud-agnostic file upload utility supporting AWS S3, Google Cloud Storage, and Azure Blob Storage. It provides a single API for direct file uploads and generating pre-signed/SAS URLs, with flexible configuration and lazy loading of cloud adapters.
+
+**Features:**
+-   **Unified API**: `uploadFile` and `generatePresignedUrl` for all supported cloud providers.
+-   **Multi-Cloud Support**: Seamlessly switch between AWS S3, Google Cloud Storage, and Azure Blob Storage.
+-   **Direct Upload & Presigned URLs**: Supports both direct file uploads (via `Buffer` or `Readable` stream) and generation of secure, time-limited URLs for client-side uploads.
+-   **Global Configuration**: Configure a default cloud provider and its credentials once at application startup.
+-   **Lazy Loading**: Cloud-specific adapters are instantiated only when needed, optimizing resource usage.
+-   **Optional File Validation**: `isRequired` option to throw `AppError` if no file is provided for upload.
+-   **DX-first & Secure**: Designed for ease of use with strong typing and secure credential handling.
+
+**Installation:**
+
+The following dependencies are required for the respective cloud providers:
+```sh
+pnpm add @aws-sdk/client-s3 @aws-sdk/s3-request-presigner
+pnpm add @google-cloud/storage
+pnpm add @azure/storage-blob
+```
+
+**Developer Usage:**
+
+```ts
+import { uploadManager, uploadFile, generatePresignedUrl } from '@vik/baselib/upload';
+import { AppError } from '@vik/baselib/errors';
+import { readFileSync, createReadStream } from 'fs'; // For example usage
+
+// 1. Configure a default cloud provider and its credentials (optional, but recommended)
+// This configuration will be used if `provider` or `credentials` are not specified in `uploadFile` or `generatePresignedUrl` options.
+uploadManager.configure({
+  defaultProvider: 'aws',
+  credentials: {
+    provider: 'aws',
+    accessKeyId: 'YOUR_AWS_ACCESS_KEY_ID',
+    secretAccessKey: 'YOUR_AWS_SECRET_ACCESS_KEY',
+    region: 'YOUR_AWS_REGION',
+  },
+});
+
+// Example: Configure for GCP
+/*
+uploadManager.configure({
+  defaultProvider: 'gcp',
+  credentials: {
+    provider: 'gcp',
+    gcpKeyFilePath: './path/to/your/gcp-key.json',
+    projectId: 'your-gcp-project-id',
+  },
+});
+*/
+
+// Example: Configure for Azure
+/*
+uploadManager.configure({
+  defaultProvider: 'azure',
+  credentials: {
+    provider: 'azure',
+    azureConnectionString: 'YOUR_AZURE_STORAGE_CONNECTION_STRING',
+  },
+});
+*/
+
+// 2. Upload a file (using global config or specific options)
+
+// Using global configuration (if configured)
+async function uploadExample1() {
+  try {
+    const buffer = readFileSync('path/to/your/image.png');
+    const result = await uploadFile(buffer, {
+      key: 'users/profile/avatar.png',
+      mimeType: 'image/png',
+      bucket: 'your-default-bucket', // Optional if bucket is part of global config or inferred
+      isRequired: true,
+    });
+    console.log('Upload successful (using global config):', result);
+  } catch (error) {
+    if (error instanceof AppError) {
+      console.error(`Upload Error (${error.statusCode}): ${error.message}`);
+    } else {
+      console.error('An unexpected upload error occurred:', error);
+    }
+  }
+}
+
+// Overriding global configuration or specifying all options
+async function uploadExample2() {
+  try {
+    const stream = createReadStream('path/to/your/document.pdf');
+    const result = await uploadFile(stream, {
+      provider: 'gcp', // Explicitly use GCP
+      key: 'documents/report.pdf',
+      mimeType: 'application/pdf',
+      bucket: 'your-gcp-bucket',
+      credentials: { // Provide GCP-specific credentials for this upload
+        provider: 'gcp',
+        gcpKeyFilePath: './path/to/another/gcp-key.json',
+      },
+    });
+    console.log('Upload successful (explicit GCP config):', result);
+  } catch (error) {
+    if (error instanceof AppError) {
+      console.error(`Upload Error (${error.statusCode}): ${error.message}`);
+    } else {
+      console.error('An unexpected upload error occurred:', error);
+    }
+  }
+}
+
+// 3. Generate a pre-signed URL (using global config or specific options)
+
+// Using global configuration (if configured)
+async function presignExample1() {
+  try {
+    const presigned = await generatePresignedUrl({
+      key: 'videos/upload-temp.mp4',
+      mimeType: 'video/mp4',
+      bucket: 'your-default-bucket',
+      expiresIn: 3600, // URL valid for 1 hour
+    });
+    console.log('Presigned URL (using global config):', presigned.url);
+  } catch (error) {
+    if (error instanceof AppError) {
+      console.error(`Presign Error (${error.statusCode}): ${error.message}`);
+    } else {
+      console.error('An unexpected presign error occurred:', error);
+    }
+  }
+}
+
+// Overriding global configuration or specifying all options
+async function presignExample2() {
+  try {
+    const presigned = await generatePresignedUrl({
+      provider: 'azure', // Explicitly use Azure
+      key: 'audios/recording.mp3',
+      mimeType: 'audio/mpeg',
+      bucket: 'your-azure-container',
+      expiresIn: 1800, // URL valid for 30 minutes
+      credentials: { // Provide Azure-specific credentials for this presign
+        provider: 'azure',
+        azureConnectionString: 'YOUR_AZURE_STORAGE_CONNECTION_STRING_FOR_THIS_CALL',
+      },
+    });
+    console.log('Presigned URL (explicit Azure config):', presigned.url);
+  } catch (error) {
+    if (error instanceof AppError) {
+      console.error(`Presign Error (${error.statusCode}): ${error.message}`);
+    } else {
+      console.error('An unexpected presign error occurred:', error);
+    }
+  }
+}
+
+// Call examples (uncomment to run)
+// uploadExample1();
+// uploadExample2();
+// presignExample1();
+// presignExample2();
+```
+
+### 13. Lodash Utilities (`_` Object)
 
 The `@vik/baselib/utils` module now integrates the full [Lodash](https://lodash.com/) library, exposed via a single `_` object. This provides a comprehensive set of high-performance utility functions for common programming tasks, replicating the familiar Lodash developer experience.
 

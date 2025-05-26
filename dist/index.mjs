@@ -946,6 +946,224 @@ var JwtManager = class {
 
 // src/jwt/index.ts
 var jwt2 = new JwtManager();
+
+// src/upload/aws.adapter.ts
+import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+var AwsAdapter = class {
+  getS3Client(credentials) {
+    const { region, accessKeyId, secretAccessKey } = credentials;
+    return new S3Client({
+      region,
+      credentials: {
+        accessKeyId,
+        secretAccessKey
+      }
+    });
+  }
+  async uploadFile(bufferOrStream, options) {
+    const { key, mimeType, bucket, credentials } = options;
+    if (!bucket || !credentials || credentials.provider !== "aws") {
+      throw new Error("AWS S3 bucket and valid AWS credentials are required for AWS upload.");
+    }
+    const awsCredentials = credentials;
+    const client = this.getS3Client(awsCredentials);
+    const uploadParams = {
+      Bucket: bucket,
+      Key: key,
+      Body: bufferOrStream,
+      ContentType: mimeType
+    };
+    await client.send(new PutObjectCommand(uploadParams));
+    const url = `https://${bucket}.s3.${awsCredentials.region}.amazonaws.com/${key}`;
+    return { url, key, bucket, provider: "aws" };
+  }
+  async generatePresignedUrl(options) {
+    const { key, mimeType, bucket, credentials, expiresIn = 3600 } = options;
+    if (!bucket || !credentials || credentials.provider !== "aws") {
+      throw new Error("AWS S3 bucket and valid AWS credentials are required for AWS presigned URL.");
+    }
+    const awsCredentials = credentials;
+    const client = this.getS3Client(awsCredentials);
+    const command = new PutObjectCommand({
+      Bucket: bucket,
+      Key: key,
+      ContentType: mimeType
+    });
+    const url = await getSignedUrl(client, command, { expiresIn });
+    return { url };
+  }
+};
+
+// src/upload/gcp.adapter.ts
+import { Storage } from "@google-cloud/storage";
+import { Readable } from "stream";
+var GcpAdapter = class {
+  getStorageClient(credentials) {
+    const { gcpKeyFilePath, projectId } = credentials;
+    if (gcpKeyFilePath) {
+      return new Storage({ keyFilename: gcpKeyFilePath, projectId });
+    }
+    return new Storage({ projectId });
+  }
+  async uploadFile(bufferOrStream, options) {
+    const { key, mimeType, bucket, credentials } = options;
+    if (!bucket || !credentials || credentials.provider !== "gcp") {
+      throw new Error("GCP bucket and valid GCP credentials are required for Google Cloud Storage upload.");
+    }
+    const gcpCredentials = credentials;
+    const storage = this.getStorageClient(gcpCredentials);
+    const file = storage.bucket(bucket).file(key);
+    await new Promise((resolve, reject) => {
+      const uploadStream = file.createWriteStream({
+        metadata: {
+          contentType: mimeType
+        }
+      });
+      if (bufferOrStream instanceof Buffer) {
+        const bufferStream = Readable.from(bufferOrStream);
+        bufferStream.pipe(uploadStream).on("finish", resolve).on("error", reject);
+      } else {
+        bufferOrStream.pipe(uploadStream).on("finish", resolve).on("error", reject);
+      }
+    });
+    const url = `https://storage.googleapis.com/${bucket}/${key}`;
+    return { url, key, bucket, provider: "gcp" };
+  }
+  async generatePresignedUrl(options) {
+    const { key, mimeType, bucket, credentials, expiresIn = 3600 } = options;
+    if (!bucket || !credentials || credentials.provider !== "gcp") {
+      throw new Error("GCP bucket and valid GCP credentials are required for Google Cloud Storage presigned URL.");
+    }
+    const gcpCredentials = credentials;
+    const storage = this.getStorageClient(gcpCredentials);
+    const file = storage.bucket(bucket).file(key);
+    const [url] = await file.getSignedUrl({
+      version: "v4",
+      action: "write",
+      expires: Date.now() + expiresIn * 1e3,
+      // expiresIn is in seconds
+      contentType: mimeType
+    });
+    return { url };
+  }
+};
+
+// src/upload/azure.adapter.ts
+import { BlobServiceClient, BlobSASPermissions } from "@azure/storage-blob";
+var AzureAdapter = class {
+  getBlobServiceClient(credentials) {
+    const { azureConnectionString } = credentials;
+    return BlobServiceClient.fromConnectionString(azureConnectionString);
+  }
+  async uploadFile(bufferOrStream, options) {
+    const { key, mimeType, bucket, credentials } = options;
+    if (!bucket || !credentials || credentials.provider !== "azure") {
+      throw new Error("Azure bucket and valid Azure credentials are required for Azure Blob upload.");
+    }
+    const azureCredentials = credentials;
+    const blobServiceClient = this.getBlobServiceClient(azureCredentials);
+    const containerClient = blobServiceClient.getContainerClient(bucket);
+    await containerClient.createIfNotExists();
+    const blockBlobClient = containerClient.getBlockBlobClient(key);
+    if (bufferOrStream instanceof Buffer) {
+      await blockBlobClient.upload(bufferOrStream, bufferOrStream.length, {
+        blobHTTPHeaders: { blobContentType: mimeType }
+      });
+    } else {
+      await blockBlobClient.uploadStream(bufferOrStream, void 0, void 0, {
+        blobHTTPHeaders: { blobContentType: mimeType }
+      });
+    }
+    const url = blockBlobClient.url;
+    return { url, key, bucket, provider: "azure" };
+  }
+  async generatePresignedUrl(options) {
+    const { key, mimeType, bucket, credentials, expiresIn = 3600 } = options;
+    if (!bucket || !credentials || credentials.provider !== "azure") {
+      throw new Error("Azure bucket and valid Azure credentials are required for Azure presigned URL.");
+    }
+    const azureCredentials = credentials;
+    const blobServiceClient = this.getBlobServiceClient(azureCredentials);
+    const containerClient = blobServiceClient.getContainerClient(bucket);
+    await containerClient.createIfNotExists();
+    const blockBlobClient = containerClient.getBlockBlobClient(key);
+    const sasOptions = {
+      containerName: bucket,
+      blobName: key,
+      startsOn: /* @__PURE__ */ new Date(),
+      expiresOn: new Date(Date.now() + expiresIn * 1e3),
+      permissions: BlobSASPermissions.from({ write: true }),
+      // Write permission
+      contentType: mimeType
+    };
+    const sasUrl = await blockBlobClient.generateSasUrl(sasOptions);
+    return { url: sasUrl };
+  }
+};
+
+// src/upload/upload.manager.ts
+var UploadManager = class {
+  constructor() {
+    this.adapters = /* @__PURE__ */ new Map();
+  }
+  configure(config2) {
+    this.globalConfig = config2;
+  }
+  getAdapter(provider2) {
+    if (!this.adapters.has(provider2)) {
+      switch (provider2) {
+        case "aws":
+          this.adapters.set("aws", new AwsAdapter());
+          break;
+        case "gcp":
+          this.adapters.set("gcp", new GcpAdapter());
+          break;
+        case "azure":
+          this.adapters.set("azure", new AzureAdapter());
+          break;
+        default:
+          throw new AppError(`Unsupported cloud provider: ${provider2}`, 400);
+      }
+    }
+    return this.adapters.get(provider2);
+  }
+  resolveOptions(options) {
+    var _a, _b;
+    const resolvedProvider = options.provider || ((_a = this.globalConfig) == null ? void 0 : _a.defaultProvider);
+    const resolvedCredentials = options.credentials || ((_b = this.globalConfig) == null ? void 0 : _b.credentials);
+    if (!resolvedProvider) {
+      throw new AppError("Cloud provider is not specified and no global default is configured.", 400);
+    }
+    if (!resolvedCredentials) {
+      throw new AppError(`Credentials for provider ${resolvedProvider} are not specified and no global default is configured.`, 400);
+    }
+    if (resolvedCredentials.provider !== resolvedProvider) {
+      throw new AppError(`Mismatched credentials: provided credentials are for ${resolvedCredentials.provider} but resolved provider is ${resolvedProvider}.`, 400);
+    }
+    return {
+      ...options,
+      provider: resolvedProvider,
+      credentials: resolvedCredentials
+    };
+  }
+  async uploadFile(bufferOrStream, options) {
+    const resolvedOptions = this.resolveOptions(options);
+    const { provider: provider2, isRequired } = resolvedOptions;
+    if (isRequired && (!bufferOrStream || bufferOrStream instanceof Buffer && bufferOrStream.length === 0)) {
+      throw new AppError("File is required", 400);
+    }
+    const adapter = this.getAdapter(provider2);
+    return adapter.uploadFile(bufferOrStream, resolvedOptions);
+  }
+  async generatePresignedUrl(options) {
+    const resolvedOptions = this.resolveOptions(options);
+    const { provider: provider2 } = resolvedOptions;
+    const adapter = this.getAdapter(provider2);
+    return adapter.generatePresignedUrl(resolvedOptions);
+  }
+};
+var uploadManager = new UploadManager();
 export {
   BaseRepository,
   DateUtil,
@@ -974,6 +1192,7 @@ export {
   logger_exports as logger,
   publish,
   subscribe,
+  uploadManager,
   utils,
   v_default as v,
   validate
