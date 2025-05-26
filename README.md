@@ -214,20 +214,70 @@ authLogger.info('User login started');
 
 > Uses `pino` (runtime) and `pino-pretty` (dev only). No config needed for basic use.
 
+### 8. Centralized Error Handling Utility
+
+A universal error handling utility for consistent error throwing, logging, and response formatting across all backend services.
+
+```ts
+import { AppError, ErrorType, handleError } from '@vik/baselib/errors';
+
+// Throwing a structured error
+throw new AppError('Invalid input', 400, ErrorType.VALIDATION, { field: 'email' });
+
+// Handling errors in a framework-agnostic way
+try {
+  // ...
+} catch (err) {
+  const { statusCode, message, type } = handleError(err, { logger });
+  // Respond with statusCode/message/type (e.g., in Express, Fastify, etc.)
+}
+
+// Express example:
+app.use((err, req, res, next) => {
+  const { statusCode, message, type } = handleError(err, { logger });
+  res.status(statusCode).json({ message, type });
+});
+```
+
+- **AppError:** Custom error class with status, type, context, and operational flag
+- **ErrorType:** Enum for common error categories (VALIDATION, AUTH, NOT_FOUND, INTERNAL)
+- **handleError:** Standardizes error logging and response, works with any framework
+- **No framework lock-in:** Use in Express, Fastify, NestJS, etc.
+
+#### 🛠️ FAQ: Cannot find module './error.types' or its corresponding type declarations
+
+If you see this TypeScript error, but the file exists:
+
+- Ensure the file is named exactly `error.types.ts` and is in the same directory as `app-error.ts`.
+- Restart your editor or the TypeScript server (in VSCode: Cmd+Shift+P → "TypeScript: Restart TS Server").
+- Clean build artifacts and rebuild:
+  ```sh
+  rm -rf dist
+  pnpm build
+  ```
+- Make sure your `tsconfig.json` includes the `src/errors` directory.
+
+This is usually an editor or build cache issue, not a code problem.
+
 ---
 
 ## 🧪 Testing & Coverage
 
-- **Unit tests** use pure in-memory mocks for all modules (no external dependencies).
-- **Run all unit tests:**
-  ```sh
-  pnpm test
-  ```
-- **Coverage:**
-  ```sh
-  pnpm test:coverage
-  ```
-- 100% coverage for config utility and high coverage for other modules.
+All core modules (config, logger, mongo, redis, queue, postgres, email) have robust, isolated unit tests with mocks for all external dependencies. No real services are required.
+
+**Run all unit tests:**
+```sh
+pnpm test
+```
+
+**Check coverage:**
+```sh
+pnpm test:coverage
+```
+
+- All modules are covered: config, logger, mongo, redis, queue, postgres, email
+- Edge cases and error handling are tested
+- No integration tests or real service dependencies
 
 ---
 

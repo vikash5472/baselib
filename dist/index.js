@@ -47,6 +47,7 @@ __export(index_exports, {
   disconnectAllRedis: () => disconnectAllRedis,
   disconnectSpecificRedis: () => disconnectSpecificRedis,
   email: () => email,
+  errors: () => errors_exports,
   getDrizzleClient: () => getDrizzleClient,
   getQueue: () => getQueue,
   getRedis: () => getRedis,
@@ -533,6 +534,64 @@ function getLogger() {
   return instance;
 }
 var logger = getLogger();
+
+// src/errors/index.ts
+var errors_exports = {};
+__export(errors_exports, {
+  AppError: () => AppError,
+  ErrorType: () => ErrorType,
+  handleError: () => handleError
+});
+
+// src/errors/error.types.ts
+var ErrorType = /* @__PURE__ */ ((ErrorType2) => {
+  ErrorType2["VALIDATION"] = "VALIDATION";
+  ErrorType2["AUTH"] = "AUTH";
+  ErrorType2["NOT_FOUND"] = "NOT_FOUND";
+  ErrorType2["INTERNAL"] = "INTERNAL";
+  return ErrorType2;
+})(ErrorType || {});
+
+// src/errors/app-error.ts
+var AppError = class extends Error {
+  constructor(message, statusCode = 500, type = "INTERNAL" /* INTERNAL */, context) {
+    var _a;
+    super(message);
+    this.name = "AppError";
+    this.statusCode = statusCode;
+    this.type = type;
+    this.context = context;
+    this.isOperational = true;
+    (_a = Error.captureStackTrace) == null ? void 0 : _a.call(Error, this, this.constructor);
+  }
+};
+
+// src/errors/error.handler.ts
+function handleError(error, options = {}) {
+  let appError;
+  if (error instanceof AppError) {
+    appError = error;
+  } else if (error instanceof Error) {
+    appError = new AppError(error.message, 500, "INTERNAL" /* INTERNAL */);
+  } else {
+    appError = new AppError("Unknown error", 500, "INTERNAL" /* INTERNAL */);
+  }
+  if (options.logger) {
+    options.logger.error(appError.message, {
+      type: appError.type,
+      statusCode: appError.statusCode,
+      context: appError.context,
+      stack: appError.stack,
+      traceId: options.traceId
+    });
+  }
+  return {
+    statusCode: appError.statusCode,
+    message: appError.message,
+    type: appError.type,
+    traceId: options.traceId
+  };
+}
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {
   BaseRepository,
@@ -552,6 +611,7 @@ var logger = getLogger();
   disconnectAllRedis,
   disconnectSpecificRedis,
   email,
+  errors,
   getDrizzleClient,
   getQueue,
   getRedis,

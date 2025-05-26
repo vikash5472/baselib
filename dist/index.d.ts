@@ -280,11 +280,46 @@ interface PinoLogger {
 
 declare const logger: PinoLogger;
 
-type index_LoggerContext = LoggerContext;
-type index_PinoLogger = PinoLogger;
-declare const index_logger: typeof logger;
-declare namespace index {
-  export { type index_LoggerContext as LoggerContext, type index_PinoLogger as PinoLogger, index_logger as logger };
+type index$1_LoggerContext = LoggerContext;
+type index$1_PinoLogger = PinoLogger;
+declare const index$1_logger: typeof logger;
+declare namespace index$1 {
+  export { type index$1_LoggerContext as LoggerContext, type index$1_PinoLogger as PinoLogger, index$1_logger as logger };
 }
 
-export { type BaseDocument, type BaseJobData, BaseRepository, type ConfigManager, type EmailOptions, type EmailProvider, type EmailResult, type JobOptions, MongoManager, type MongooseModel, type PlaceholderType, type PostgresConnectionConfig, type QueueConfig, type SchemaDefinition, SendGridProvider, type SendGridProviderOptions, SmtpProvider, type SmtpProviderOptions, cacheDel, cacheGet, cacheSet, config, connectPostgres, connectRedis, createModel, createQueue, createRepository, createWorker, disconnectAllRedis, disconnectSpecificRedis, email, getDrizzleClient, getQueue, getRedis, index as logger, publish, subscribe };
+declare class AppError extends Error {
+    statusCode: number;
+    type: string;
+    context?: Record<string, any>;
+    isOperational: boolean;
+    constructor(message: string, statusCode?: number, type?: string, context?: Record<string, any>);
+}
+
+declare enum ErrorType {
+    VALIDATION = "VALIDATION",
+    AUTH = "AUTH",
+    NOT_FOUND = "NOT_FOUND",
+    INTERNAL = "INTERNAL"
+}
+
+interface HandleErrorOptions {
+    logger?: PinoLogger;
+    traceId?: string;
+}
+declare function handleError(error: unknown, options?: HandleErrorOptions): {
+    statusCode: number;
+    message: string;
+    type: string;
+    traceId?: string;
+};
+
+type index_AppError = AppError;
+declare const index_AppError: typeof AppError;
+type index_ErrorType = ErrorType;
+declare const index_ErrorType: typeof ErrorType;
+declare const index_handleError: typeof handleError;
+declare namespace index {
+  export { index_AppError as AppError, index_ErrorType as ErrorType, index_handleError as handleError };
+}
+
+export { type BaseDocument, type BaseJobData, BaseRepository, type ConfigManager, type EmailOptions, type EmailProvider, type EmailResult, type JobOptions, MongoManager, type MongooseModel, type PlaceholderType, type PostgresConnectionConfig, type QueueConfig, type SchemaDefinition, SendGridProvider, type SendGridProviderOptions, SmtpProvider, type SmtpProviderOptions, cacheDel, cacheGet, cacheSet, config, connectPostgres, connectRedis, createModel, createQueue, createRepository, createWorker, disconnectAllRedis, disconnectSpecificRedis, email, index as errors, getDrizzleClient, getQueue, getRedis, index$1 as logger, publish, subscribe };
