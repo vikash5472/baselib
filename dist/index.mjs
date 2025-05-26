@@ -568,6 +568,214 @@ function validate(schema, data) {
   }
   return result.data;
 }
+
+// src/utils/object.utils.ts
+var object_utils_exports = {};
+__export(object_utils_exports, {
+  deepClone: () => deepClone,
+  omit: () => omit,
+  pick: () => pick
+});
+function pick(obj, keys) {
+  const result = {};
+  for (const key of keys) {
+    if (key in obj) result[key] = obj[key];
+  }
+  return result;
+}
+function omit(obj, keys) {
+  const result = { ...obj };
+  for (const key of keys) {
+    delete result[key];
+  }
+  return result;
+}
+function deepClone(obj) {
+  return JSON.parse(JSON.stringify(obj));
+}
+
+// src/utils/string.utils.ts
+var string_utils_exports = {};
+__export(string_utils_exports, {
+  capitalize: () => capitalize,
+  slugify: () => slugify,
+  truncate: () => truncate
+});
+function slugify(input) {
+  return input.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+}
+function capitalize(str) {
+  return str.charAt(0).toUpperCase() + str.slice(1);
+}
+function truncate(str, length) {
+  if (str.length <= length) return str;
+  return str.slice(0, length) + "...";
+}
+
+// src/utils/date.utils.ts
+var date_utils_exports = {};
+__export(date_utils_exports, {
+  addDays: () => addDays,
+  addHours: () => addHours,
+  addMinutes: () => addMinutes,
+  compareDates: () => compareDates,
+  daysBetween: () => daysBetween,
+  endOfDay: () => endOfDay,
+  formatDate: () => formatDate,
+  fromUnix: () => fromUnix,
+  isFuture: () => isFuture,
+  isLeapYear: () => isLeapYear,
+  isPast: () => isPast,
+  isSameDay: () => isSameDay,
+  isToday: () => isToday,
+  now: () => now,
+  startOfDay: () => startOfDay,
+  subDays: () => subDays,
+  subHours: () => subHours,
+  subMinutes: () => subMinutes,
+  toUnix: () => toUnix
+});
+function now() {
+  return /* @__PURE__ */ new Date();
+}
+function formatDate(date, format) {
+  if (!format) return date.toISOString();
+  if (format === "YYYY-MM-DD") {
+    return date.toISOString().slice(0, 10);
+  }
+  return date.toISOString();
+}
+function addDays(date, days) {
+  const d = new Date(date);
+  d.setDate(d.getDate() + days);
+  return d;
+}
+function subDays(date, days) {
+  const d = new Date(date);
+  d.setDate(d.getDate() - days);
+  return d;
+}
+function addHours(date, hours) {
+  const d = new Date(date);
+  d.setHours(d.getHours() + hours);
+  return d;
+}
+function subHours(date, hours) {
+  const d = new Date(date);
+  d.setHours(d.getHours() - hours);
+  return d;
+}
+function addMinutes(date, minutes) {
+  const d = new Date(date);
+  d.setMinutes(d.getMinutes() + minutes);
+  return d;
+}
+function subMinutes(date, minutes) {
+  const d = new Date(date);
+  d.setMinutes(d.getMinutes() - minutes);
+  return d;
+}
+function isFuture(date) {
+  return date.getTime() > Date.now();
+}
+function isPast(date) {
+  return date.getTime() < Date.now();
+}
+function isToday(date) {
+  const today = /* @__PURE__ */ new Date();
+  return date.getDate() === today.getDate() && date.getMonth() === today.getMonth() && date.getFullYear() === today.getFullYear();
+}
+function isSameDay(a, b) {
+  return a.getDate() === b.getDate() && a.getMonth() === b.getMonth() && a.getFullYear() === b.getFullYear();
+}
+function startOfDay(date) {
+  const d = new Date(date);
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+function endOfDay(date) {
+  const d = new Date(date);
+  d.setHours(23, 59, 59, 999);
+  return d;
+}
+function compareDates(a, b) {
+  return a.getTime() - b.getTime();
+}
+function daysBetween(a, b) {
+  const diff = Math.abs(startOfDay(a).getTime() - startOfDay(b).getTime());
+  return Math.floor(diff / (1e3 * 60 * 60 * 24));
+}
+function toUnix(date) {
+  return Math.floor(date.getTime() / 1e3);
+}
+function fromUnix(unix) {
+  return new Date(unix * 1e3);
+}
+function isLeapYear(date) {
+  const year = date.getFullYear();
+  return year % 4 === 0 && year % 100 !== 0 || year % 400 === 0;
+}
+
+// src/utils/type.utils.ts
+var type_utils_exports = {};
+__export(type_utils_exports, {
+  isEmail: () => isEmail,
+  isEmpty: () => isEmpty,
+  isObject: () => isObject
+});
+function isObject(input) {
+  return typeof input === "object" && input !== null && !Array.isArray(input);
+}
+function isEmpty(input) {
+  if (input == null) return true;
+  if (typeof input === "string" || Array.isArray(input)) return input.length === 0;
+  if (isObject(input)) return Object.keys(input).length === 0;
+  return false;
+}
+function isEmail(input) {
+  return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(input);
+}
+
+// src/utils/general.utils.ts
+var general_utils_exports = {};
+__export(general_utils_exports, {
+  retry: () => retry,
+  sleep: () => sleep,
+  uuid: () => uuid
+});
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+async function retry(fn, times, delay = 0) {
+  let lastErr;
+  for (let i = 0; i < times; i++) {
+    try {
+      return await fn();
+    } catch (err) {
+      lastErr = err;
+      if (delay) await sleep(delay);
+    }
+  }
+  throw lastErr;
+}
+function uuid() {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
+    const r = Math.random() * 16 | 0, v2 = c === "x" ? r : r & 3 | 8;
+    return v2.toString(16);
+  });
+}
+
+// src/utils/index.ts
+var utils = {
+  ...object_utils_exports,
+  ...string_utils_exports,
+  ...date_utils_exports,
+  ...type_utils_exports,
+  ...general_utils_exports
+};
 export {
   BaseRepository,
   mongo_manager_default as MongoManager,
@@ -583,16 +791,22 @@ export {
   createQueue,
   createRepository,
   createWorker,
+  date_utils_exports as dateUtils,
   disconnectAllRedis,
   disconnectSpecificRedis,
   email,
   errors_exports as errors,
+  general_utils_exports as generalUtils,
   getDrizzleClient,
   getQueue,
   getRedis,
   logger_exports as logger,
+  object_utils_exports as objectUtils,
   publish,
+  string_utils_exports as stringUtils,
   subscribe,
+  type_utils_exports as typeUtils,
+  utils,
   v_default as v,
   validate
 };

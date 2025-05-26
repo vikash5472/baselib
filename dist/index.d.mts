@@ -330,4 +330,125 @@ declare const v: typeof z & {
 
 declare function validate<T extends z.ZodTypeAny>(schema: T, data: unknown): z.infer<T>;
 
-export { type BaseDocument, type BaseJobData, BaseRepository, type ConfigManager, type EmailOptions, type EmailProvider, type EmailResult, type JobOptions, MongoManager, type MongooseModel, type PlaceholderType, type PostgresConnectionConfig, type QueueConfig, type SchemaDefinition, SendGridProvider, type SendGridProviderOptions, SmtpProvider, type SmtpProviderOptions, cacheDel, cacheGet, cacheSet, config, connectPostgres, connectRedis, createModel, createQueue, createRepository, createWorker, disconnectAllRedis, disconnectSpecificRedis, email, index as errors, getDrizzleClient, getQueue, getRedis, index$1 as logger, publish, subscribe, v, validate };
+declare function pick<T extends object, K extends keyof T>(obj: T, keys: K[]): Pick<T, K>;
+declare function omit<T extends object, K extends keyof T>(obj: T, keys: K[]): Omit<T, K>;
+declare function deepClone<T>(obj: T): T;
+
+declare const object_utils_deepClone: typeof deepClone;
+declare const object_utils_omit: typeof omit;
+declare const object_utils_pick: typeof pick;
+declare namespace object_utils {
+  export { object_utils_deepClone as deepClone, object_utils_omit as omit, object_utils_pick as pick };
+}
+
+declare function slugify(input: string): string;
+declare function capitalize(str: string): string;
+declare function truncate(str: string, length: number): string;
+
+declare const string_utils_capitalize: typeof capitalize;
+declare const string_utils_slugify: typeof slugify;
+declare const string_utils_truncate: typeof truncate;
+declare namespace string_utils {
+  export { string_utils_capitalize as capitalize, string_utils_slugify as slugify, string_utils_truncate as truncate };
+}
+
+declare function now(): Date;
+declare function formatDate(date: Date, format?: string): string;
+declare function addDays(date: Date, days: number): Date;
+declare function subDays(date: Date, days: number): Date;
+declare function addHours(date: Date, hours: number): Date;
+declare function subHours(date: Date, hours: number): Date;
+declare function addMinutes(date: Date, minutes: number): Date;
+declare function subMinutes(date: Date, minutes: number): Date;
+declare function isFuture(date: Date): boolean;
+declare function isPast(date: Date): boolean;
+declare function isToday(date: Date): boolean;
+declare function isSameDay(a: Date, b: Date): boolean;
+declare function startOfDay(date: Date): Date;
+declare function endOfDay(date: Date): Date;
+declare function compareDates(a: Date, b: Date): number;
+declare function daysBetween(a: Date, b: Date): number;
+declare function toUnix(date: Date): number;
+declare function fromUnix(unix: number): Date;
+declare function isLeapYear(date: Date): boolean;
+
+declare const date_utils_addDays: typeof addDays;
+declare const date_utils_addHours: typeof addHours;
+declare const date_utils_addMinutes: typeof addMinutes;
+declare const date_utils_compareDates: typeof compareDates;
+declare const date_utils_daysBetween: typeof daysBetween;
+declare const date_utils_endOfDay: typeof endOfDay;
+declare const date_utils_formatDate: typeof formatDate;
+declare const date_utils_fromUnix: typeof fromUnix;
+declare const date_utils_isFuture: typeof isFuture;
+declare const date_utils_isLeapYear: typeof isLeapYear;
+declare const date_utils_isPast: typeof isPast;
+declare const date_utils_isSameDay: typeof isSameDay;
+declare const date_utils_isToday: typeof isToday;
+declare const date_utils_now: typeof now;
+declare const date_utils_startOfDay: typeof startOfDay;
+declare const date_utils_subDays: typeof subDays;
+declare const date_utils_subHours: typeof subHours;
+declare const date_utils_subMinutes: typeof subMinutes;
+declare const date_utils_toUnix: typeof toUnix;
+declare namespace date_utils {
+  export { date_utils_addDays as addDays, date_utils_addHours as addHours, date_utils_addMinutes as addMinutes, date_utils_compareDates as compareDates, date_utils_daysBetween as daysBetween, date_utils_endOfDay as endOfDay, date_utils_formatDate as formatDate, date_utils_fromUnix as fromUnix, date_utils_isFuture as isFuture, date_utils_isLeapYear as isLeapYear, date_utils_isPast as isPast, date_utils_isSameDay as isSameDay, date_utils_isToday as isToday, date_utils_now as now, date_utils_startOfDay as startOfDay, date_utils_subDays as subDays, date_utils_subHours as subHours, date_utils_subMinutes as subMinutes, date_utils_toUnix as toUnix };
+}
+
+declare function isObject(input: unknown): boolean;
+declare function isEmpty(input: any): boolean;
+declare function isEmail(input: string): boolean;
+
+declare const type_utils_isEmail: typeof isEmail;
+declare const type_utils_isEmpty: typeof isEmpty;
+declare const type_utils_isObject: typeof isObject;
+declare namespace type_utils {
+  export { type_utils_isEmail as isEmail, type_utils_isEmpty as isEmpty, type_utils_isObject as isObject };
+}
+
+declare function sleep(ms: number): Promise<void>;
+declare function retry<T>(fn: () => Promise<T>, times: number, delay?: number): Promise<T>;
+declare function uuid(): string;
+
+declare const general_utils_retry: typeof retry;
+declare const general_utils_sleep: typeof sleep;
+declare const general_utils_uuid: typeof uuid;
+declare namespace general_utils {
+  export { general_utils_retry as retry, general_utils_sleep as sleep, general_utils_uuid as uuid };
+}
+
+declare const utils: {
+    sleep(ms: number): Promise<void>;
+    retry<T>(fn: () => Promise<T>, times: number, delay?: number): Promise<T>;
+    uuid(): string;
+    isObject(input: unknown): boolean;
+    isEmpty(input: any): boolean;
+    isEmail(input: string): boolean;
+    now(): Date;
+    formatDate(date: Date, format?: string): string;
+    addDays(date: Date, days: number): Date;
+    subDays(date: Date, days: number): Date;
+    addHours(date: Date, hours: number): Date;
+    subHours(date: Date, hours: number): Date;
+    addMinutes(date: Date, minutes: number): Date;
+    subMinutes(date: Date, minutes: number): Date;
+    isFuture(date: Date): boolean;
+    isPast(date: Date): boolean;
+    isToday(date: Date): boolean;
+    isSameDay(a: Date, b: Date): boolean;
+    startOfDay(date: Date): Date;
+    endOfDay(date: Date): Date;
+    compareDates(a: Date, b: Date): number;
+    daysBetween(a: Date, b: Date): number;
+    toUnix(date: Date): number;
+    fromUnix(unix: number): Date;
+    isLeapYear(date: Date): boolean;
+    slugify(input: string): string;
+    capitalize(str: string): string;
+    truncate(str: string, length: number): string;
+    pick<T extends object, K extends keyof T>(obj: T, keys: K[]): Pick<T, K>;
+    omit<T extends object, K extends keyof T>(obj: T, keys: K[]): Omit<T, K>;
+    deepClone<T>(obj: T): T;
+};
+
+export { type BaseDocument, type BaseJobData, BaseRepository, type ConfigManager, type EmailOptions, type EmailProvider, type EmailResult, type JobOptions, MongoManager, type MongooseModel, type PlaceholderType, type PostgresConnectionConfig, type QueueConfig, type SchemaDefinition, SendGridProvider, type SendGridProviderOptions, SmtpProvider, type SmtpProviderOptions, cacheDel, cacheGet, cacheSet, config, connectPostgres, connectRedis, createModel, createQueue, createRepository, createWorker, date_utils as dateUtils, disconnectAllRedis, disconnectSpecificRedis, email, index as errors, general_utils as generalUtils, getDrizzleClient, getQueue, getRedis, index$1 as logger, object_utils as objectUtils, publish, string_utils as stringUtils, subscribe, type_utils as typeUtils, utils, v, validate };
