@@ -1038,13 +1038,9 @@ var import_client_s3 = require("@aws-sdk/client-s3");
 var import_s3_request_presigner = require("@aws-sdk/s3-request-presigner");
 var AwsAdapter = class {
   getS3Client(credentials) {
-    const { region, accessKeyId, secretAccessKey } = credentials;
+    const { region } = credentials;
     return new import_client_s3.S3Client({
-      region,
-      credentials: {
-        accessKeyId,
-        secretAccessKey
-      }
+      region
     });
   }
   async uploadFile(bufferOrStream, options) {

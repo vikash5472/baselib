@@ -1000,13 +1000,9 @@ import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 var AwsAdapter = class {
   getS3Client(credentials) {
-    const { region, accessKeyId, secretAccessKey } = credentials;
+    const { region } = credentials;
     return new S3Client({
-      region,
-      credentials: {
-        accessKeyId,
-        secretAccessKey
-      }
+      region
     });
   }
   async uploadFile(bufferOrStream, options) {
