@@ -8,9 +8,9 @@ import { PoolConfig } from 'pg';
 import * as drizzle_orm from 'drizzle-orm';
 import { Table, InferModel } from 'drizzle-orm';
 export { InferModel, Table } from 'drizzle-orm';
-import { Logger } from 'pino';
-import { z } from 'zod';
+import { ZodSchema, z } from 'zod';
 export { ZodError, ZodIssue, ZodObject, ZodRawShape, ZodTypeAny } from 'zod';
+import { Logger } from 'pino';
 import * as lodash from 'lodash';
 import lodash__default from 'lodash';
 import { Request, Response, NextFunction } from 'express';
@@ -158,43 +158,39 @@ type PostgresConnectionConfig = {
     database: string;
 };
 
-type ZodSchema<T> = {
-    parse(data: unknown): T;
-};
 declare const config: {
     /**
-     * Get a required environment variable. Throws if missing.
-     * @param key The environment variable key
-     * @returns The value
-     * @throws If the variable is missing
+     * Loads and validates environment variables against a Zod schema.
+     * This should be called once at application startup.
+     * @param schema The Zod schema for environment variables.
+     * @returns The validated config object.
+     * @throws {AppError} If validation fails.
      */
-    get(key: string): string;
+    loadAndValidate<T extends ZodSchema<any>>(schema: T): z.infer<T>;
+    /**
+     * Get a required environment variable. Throws if missing.
+     * @param key The environment variable key.
+     * @returns The value.
+     * @throws {Error} If the variable is missing or config is not loaded.
+     */
+    get<K extends keyof T, T = any>(key: K): T[K];
     /**
      * Get an optional environment variable. Returns undefined if missing.
-     * @param key The environment variable key
-     * @returns The value or undefined
+     * @param key The environment variable key.
+     * @returns The value or undefined.
      */
-    getOptional(key: string): string | undefined;
+    getOptional<K extends keyof T, T = any>(key: K): T[K] | undefined;
     /**
      * Get an environment variable or a fallback value if missing.
-     * @param key The environment variable key
-     * @param fallback The fallback value
-     * @returns The value or fallback
+     * @param key The environment variable key.
+     * @param fallback The fallback value.
+     * @returns The value or fallback.
      */
-    getOrDefault(key: string, fallback: string): string;
+    getOrDefault<K extends keyof T, T = any>(key: K, fallback: T[K]): T[K];
     /**
-     * Validate that all given keys are present. Throws if any are missing.
-     * @param keys The required keys
-     * @throws If any are missing
+     * Resets the configuration state. Useful for testing.
      */
-    validate(keys: string[]): void;
-    /**
-     * Validate environment using a Zod schema. Throws if invalid.
-     * @param schema The Zod schema
-     * @returns The validated result
-     * @throws If validation fails
-     */
-    validateWithSchema<T>(schema: ZodSchema<T>): T;
+    _clear(): void;
 };
 
 interface ConfigManager {
@@ -309,9 +305,14 @@ declare enum ErrorType {
     INTERNAL = "INTERNAL"
 }
 
+interface ErrorReporter {
+    report(error: AppError): void;
+}
+
 interface HandleErrorOptions {
     logger?: PinoLogger;
     traceId?: string;
+    errorReporter?: ErrorReporter;
 }
 declare function handleError(error: unknown, options?: HandleErrorOptions): {
     statusCode: number;

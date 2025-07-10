@@ -292,9 +292,71 @@ function createRepository(table, dbName = "main", primaryKey = "id") {
   };
 }
 
+// src/errors/index.ts
+var errors_exports = {};
+__export(errors_exports, {
+  AppError: () => AppError,
+  ErrorType: () => ErrorType,
+  handleError: () => handleError
+});
+
+// src/errors/error.types.ts
+var ErrorType = /* @__PURE__ */ ((ErrorType2) => {
+  ErrorType2["VALIDATION"] = "VALIDATION";
+  ErrorType2["AUTH"] = "AUTH";
+  ErrorType2["NOT_FOUND"] = "NOT_FOUND";
+  ErrorType2["INTERNAL"] = "INTERNAL";
+  return ErrorType2;
+})(ErrorType || {});
+
+// src/errors/app-error.ts
+var AppError = class extends Error {
+  constructor(message, statusCode = 500, type = "INTERNAL" /* INTERNAL */, context) {
+    var _a;
+    super(message);
+    this.name = "AppError";
+    this.statusCode = statusCode;
+    this.type = type;
+    this.context = context;
+    this.isOperational = true;
+    (_a = Error.captureStackTrace) == null ? void 0 : _a.call(Error, this, this.constructor);
+  }
+};
+
+// src/errors/error.handler.ts
+function handleError(error, options = {}) {
+  let appError;
+  if (error instanceof AppError) {
+    appError = error;
+  } else if (error instanceof Error) {
+    appError = new AppError(error.message, 500, "INTERNAL" /* INTERNAL */);
+  } else {
+    appError = new AppError("Unknown error", 500, "INTERNAL" /* INTERNAL */);
+  }
+  if (options.logger) {
+    options.logger.error(appError.message, {
+      type: appError.type,
+      statusCode: appError.statusCode,
+      context: appError.context,
+      stack: appError.stack,
+      traceId: options.traceId
+    });
+  }
+  if (options.errorReporter) {
+    options.errorReporter.report(appError);
+  }
+  return {
+    statusCode: appError.statusCode,
+    message: appError.message,
+    type: appError.type,
+    traceId: options.traceId
+  };
+}
+
 // src/config/config.manager.ts
 var dotenvLoaded = false;
-function ensureDotenvLoaded() {
+var validatedConfig = null;
+function loadDotenv() {
   if (!dotenvLoaded) {
     __require("dotenv").config();
     dotenvLoaded = true;
@@ -302,60 +364,70 @@ function ensureDotenvLoaded() {
 }
 var config = {
   /**
+   * Loads and validates environment variables against a Zod schema.
+   * This should be called once at application startup.
+   * @param schema The Zod schema for environment variables.
+   * @returns The validated config object.
+   * @throws {AppError} If validation fails.
+   */
+  loadAndValidate(schema) {
+    loadDotenv();
+    const result = schema.safeParse(process.env);
+    if (!result.success) {
+      throw new AppError(
+        "Invalid environment configuration",
+        500,
+        "CONFIG_VALIDATION",
+        result.error.flatten().fieldErrors
+      );
+    }
+    validatedConfig = result.data;
+    return result.data;
+  },
+  /**
    * Get a required environment variable. Throws if missing.
-   * @param key The environment variable key
-   * @returns The value
-   * @throws If the variable is missing
+   * @param key The environment variable key.
+   * @returns The value.
+   * @throws {Error} If the variable is missing or config is not loaded.
    */
   get(key) {
-    ensureDotenvLoaded();
-    const value = process.env[key];
-    if (value === void 0) {
-      throw new Error(`Missing required environment variable: ${key}`);
+    if (!validatedConfig) {
+      loadDotenv();
+      const value = process.env[key];
+      if (value === void 0) throw new Error(`Missing required environment variable: ${String(key)}`);
+      return value;
     }
-    return value;
+    return validatedConfig[key];
   },
   /**
    * Get an optional environment variable. Returns undefined if missing.
-   * @param key The environment variable key
-   * @returns The value or undefined
+   * @param key The environment variable key.
+   * @returns The value or undefined.
    */
   getOptional(key) {
-    ensureDotenvLoaded();
-    return process.env[key];
+    if (!validatedConfig) {
+      loadDotenv();
+      return process.env[key];
+    }
+    return validatedConfig[key];
   },
   /**
    * Get an environment variable or a fallback value if missing.
-   * @param key The environment variable key
-   * @param fallback The fallback value
-   * @returns The value or fallback
+   * @param key The environment variable key.
+   * @param fallback The fallback value.
+   * @returns The value or fallback.
    */
   getOrDefault(key, fallback) {
-    var _a;
-    ensureDotenvLoaded();
-    return (_a = process.env[key]) != null ? _a : fallback;
+    const value = this.getOptional(key);
+    return value != null ? value : fallback;
   },
   /**
-   * Validate that all given keys are present. Throws if any are missing.
-   * @param keys The required keys
-   * @throws If any are missing
+   * Resets the configuration state. Useful for testing.
    */
-  validate(keys) {
-    ensureDotenvLoaded();
-    const missing = keys.filter((k) => process.env[k] === void 0);
-    if (missing.length > 0) {
-      throw new Error(`Missing required environment variables: ${missing.join(", ")}`);
-    }
-  },
-  /**
-   * Validate environment using a Zod schema. Throws if invalid.
-   * @param schema The Zod schema
-   * @returns The validated result
-   * @throws If validation fails
-   */
-  validateWithSchema(schema) {
-    ensureDotenvLoaded();
-    return schema.parse(process.env);
+  _clear() {
+    dotenvLoaded = false;
+    validatedConfig = null;
+    delete __require.cache[__require.resolve("dotenv")];
   }
 };
 
@@ -487,64 +559,6 @@ function getLogger() {
   return instance;
 }
 var logger = getLogger();
-
-// src/errors/index.ts
-var errors_exports = {};
-__export(errors_exports, {
-  AppError: () => AppError,
-  ErrorType: () => ErrorType,
-  handleError: () => handleError
-});
-
-// src/errors/error.types.ts
-var ErrorType = /* @__PURE__ */ ((ErrorType2) => {
-  ErrorType2["VALIDATION"] = "VALIDATION";
-  ErrorType2["AUTH"] = "AUTH";
-  ErrorType2["NOT_FOUND"] = "NOT_FOUND";
-  ErrorType2["INTERNAL"] = "INTERNAL";
-  return ErrorType2;
-})(ErrorType || {});
-
-// src/errors/app-error.ts
-var AppError = class extends Error {
-  constructor(message, statusCode = 500, type = "INTERNAL" /* INTERNAL */, context) {
-    var _a;
-    super(message);
-    this.name = "AppError";
-    this.statusCode = statusCode;
-    this.type = type;
-    this.context = context;
-    this.isOperational = true;
-    (_a = Error.captureStackTrace) == null ? void 0 : _a.call(Error, this, this.constructor);
-  }
-};
-
-// src/errors/error.handler.ts
-function handleError(error, options = {}) {
-  let appError;
-  if (error instanceof AppError) {
-    appError = error;
-  } else if (error instanceof Error) {
-    appError = new AppError(error.message, 500, "INTERNAL" /* INTERNAL */);
-  } else {
-    appError = new AppError("Unknown error", 500, "INTERNAL" /* INTERNAL */);
-  }
-  if (options.logger) {
-    options.logger.error(appError.message, {
-      type: appError.type,
-      statusCode: appError.statusCode,
-      context: appError.context,
-      stack: appError.stack,
-      traceId: options.traceId
-    });
-  }
-  return {
-    statusCode: appError.statusCode,
-    message: appError.message,
-    type: appError.type,
-    traceId: options.traceId
-  };
-}
 
 // src/validator/v.ts
 import { z } from "zod";

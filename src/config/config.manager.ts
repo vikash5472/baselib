@@ -1,12 +1,12 @@
-// Optional: If you use zod, import it in your project. Otherwise, this is a placeholder type.
-type ZodSchema<T> = { parse(data: unknown): T };
+import { ZodSchema, z } from 'zod';
+import { AppError } from '../errors';
 
+// Internal state
 let dotenvLoaded = false;
+let validatedConfig: Record<string, any> | null = null;
 
-function ensureDotenvLoaded() {
+function loadDotenv() {
   if (!dotenvLoaded) {
-    // Dynamically require dotenv only on first use
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
     require('dotenv').config();
     dotenvLoaded = true;
   }
@@ -14,62 +14,74 @@ function ensureDotenvLoaded() {
 
 export const config = {
   /**
-   * Get a required environment variable. Throws if missing.
-   * @param key The environment variable key
-   * @returns The value
-   * @throws If the variable is missing
+   * Loads and validates environment variables against a Zod schema.
+   * This should be called once at application startup.
+   * @param schema The Zod schema for environment variables.
+   * @returns The validated config object.
+   * @throws {AppError} If validation fails.
    */
-  get(key: string): string {
-    ensureDotenvLoaded();
-    const value = process.env[key];
-    if (value === undefined) {
-      throw new Error(`Missing required environment variable: ${key}`);
+  loadAndValidate<T extends ZodSchema<any>>(schema: T): z.infer<T> {
+    loadDotenv();
+    const result = schema.safeParse(process.env);
+    if (!result.success) {
+      throw new AppError(
+        'Invalid environment configuration',
+        500,
+        'CONFIG_VALIDATION',
+        result.error.flatten().fieldErrors
+      );
     }
-    return value;
+    validatedConfig = result.data;
+    return result.data;
+  },
+
+  /**
+   * Get a required environment variable. Throws if missing.
+   * @param key The environment variable key.
+   * @returns The value.
+   * @throws {Error} If the variable is missing or config is not loaded.
+   */
+  get<K extends keyof T, T = any>(key: K): T[K] {
+    if (!validatedConfig) {
+      loadDotenv(); // Fallback for simple scripts, but validation is preferred
+      const value = process.env[key as string];
+      if (value === undefined) throw new Error(`Missing required environment variable: ${String(key)}`);
+      return value as T[K];
+    }
+    return validatedConfig[key as string];
   },
 
   /**
    * Get an optional environment variable. Returns undefined if missing.
-   * @param key The environment variable key
-   * @returns The value or undefined
+   * @param key The environment variable key.
+   * @returns The value or undefined.
    */
-  getOptional(key: string): string | undefined {
-    ensureDotenvLoaded();
-    return process.env[key];
+  getOptional<K extends keyof T, T = any>(key: K): T[K] | undefined {
+    if (!validatedConfig) {
+      loadDotenv();
+      return process.env[key as string] as T[K] | undefined;
+    }
+    return validatedConfig[key as string];
   },
 
   /**
    * Get an environment variable or a fallback value if missing.
-   * @param key The environment variable key
-   * @param fallback The fallback value
-   * @returns The value or fallback
+   * @param key The environment variable key.
+   * @param fallback The fallback value.
+   * @returns The value or fallback.
    */
-  getOrDefault(key: string, fallback: string): string {
-    ensureDotenvLoaded();
-    return process.env[key] ?? fallback;
+  getOrDefault<K extends keyof T, T = any>(key: K, fallback: T[K]): T[K] {
+    const value = this.getOptional(key);
+    return value ?? fallback;
   },
 
   /**
-   * Validate that all given keys are present. Throws if any are missing.
-   * @param keys The required keys
-   * @throws If any are missing
+   * Resets the configuration state. Useful for testing.
    */
-  validate(keys: string[]): void {
-    ensureDotenvLoaded();
-    const missing = keys.filter((k) => process.env[k] === undefined);
-    if (missing.length > 0) {
-      throw new Error(`Missing required environment variables: ${missing.join(', ')}`);
-    }
+  _clear(): void {
+    dotenvLoaded = false;
+    validatedConfig = null;
+    // Invalidate dotenv cache if possible, for testing different .env files
+    delete require.cache[require.resolve('dotenv')];
   },
-
-  /**
-   * Validate environment using a Zod schema. Throws if invalid.
-   * @param schema The Zod schema
-   * @returns The validated result
-   * @throws If validation fails
-   */
-  validateWithSchema<T>(schema: ZodSchema<T>): T {
-    ensureDotenvLoaded();
-    return schema.parse(process.env);
-  },
-}; 
+};

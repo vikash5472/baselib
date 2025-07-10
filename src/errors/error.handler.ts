@@ -1,10 +1,12 @@
 import { AppError } from './app-error';
 import { ErrorType } from './error.types';
 import type { PinoLogger } from '../logger/types';
+import type { ErrorReporter } from './sentry.reporter';
 
 interface HandleErrorOptions {
   logger?: PinoLogger;
   traceId?: string;
+  errorReporter?: ErrorReporter;
 }
 
 export function handleError(
@@ -35,10 +37,14 @@ export function handleError(
     });
   }
 
+  if (options.errorReporter) {
+    options.errorReporter.report(appError);
+  }
+
   return {
     statusCode: appError.statusCode,
     message: appError.message,
     type: appError.type,
     traceId: options.traceId,
   };
-} 
+}

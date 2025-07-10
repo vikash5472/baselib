@@ -1,66 +1,41 @@
-// src/postgres/repository.factory.ts
+import { eq, InferSelectModel, InferInsertModel } from 'drizzle-orm';
+import { PgTable, PgColumn } from 'drizzle-orm/pg-core';
+import { getDrizzleClient } from './postgres.manager';
 
-import { Pool, PoolClient } from 'pg';
-import { SchemaBuilder } from './schema.builder';
-
-// Define a generic type for the repository based on the schema
-export type Repository<T extends object> = {
-  insert: (data: T) => Promise<T>;
-  update: (id: any, data: Partial<T>) => Promise<T | undefined>;
-  findAll: () => Promise<T[]>;
-  findById: (id: any) => Promise<T | undefined>;
-  delete: (id: any) => Promise<void>;
-  // TODO: Add optional where, join, limit helpers
+// Constrain T to be a PgTable that has an 'id' column for generic operations.
+type TableWithId = PgTable & {
+  id: PgColumn;
 };
 
-// Function to create typed repository objects
-export function createRepository<T extends object>(pool: Pool | PoolClient, tableName: string, schemaDefinition: Record<string, string>): Repository<T> {
-  const schemaBuilder = new SchemaBuilder();
-  const createTableSql = schemaBuilder.buildCreateTableStatement(tableName, schemaDefinition);
+export function createRepository<T extends TableWithId>(schema: T, connectionName: string) {
+  const db: any = getDrizzleClient(connectionName);
 
-  // Execute CREATE TABLE statement (fire and forget, or handle initial setup elsewhere)
-  pool.query(createTableSql).catch(console.error); // Basic error handling
-
-  const insert = async (data: T): Promise<T> => {
-    const columns = Object.keys(data).join(', ');
-    const valuesPlaceholders = Object.keys(data).map((_, i) => `$\${i + 1}`).join(', ');
-    const values = Object.values(data);
-    const sql = `INSERT INTO "${tableName}" (${columns}) VALUES (${valuesPlaceholders}) RETURNING *;`;
-    const result = await pool.query(sql, values);
-    return result.rows[0];
-  };
-
-  const update = async (id: any, data: Partial<T>): Promise<T | undefined> => {
-    const setClauses = Object.keys(data)
-      .map((key, i) => `"${key}" = $\${i + 2}`).join(', ');
-    const values = [id, ...Object.values(data)];
-    const sql = `UPDATE "${tableName}" SET ${setClauses} WHERE id = $1 RETURNING *;`;
-    const result = await pool.query(sql, values);
-    return result.rows[0];
-  };
-
-  const findAll = async (): Promise<T[]> => {
-    const sql = `SELECT * FROM "${tableName}";`;
-    const result = await pool.query(sql);
-    return result.rows;
-  };
-
-  const findById = async (id: any): Promise<T | undefined> => {
-    const sql = `SELECT * FROM "${tableName}\" WHERE id = $1;`;
-    const result = await pool.query(sql, [id]);
-    return result.rows[0];
-  };
-
-  const del = async (id: any): Promise<void> => {
-    const sql = `DELETE FROM \"${tableName}\" WHERE id = $1;`;
-    await pool.query(sql, [id]);
-  };
+  type SelectModel = InferSelectModel<T>;
+  type InsertModel = InferInsertModel<T>;
+  type IdType = SelectModel['id'];
 
   return {
-    insert,
-    update,
-    findAll,
-    findById,
-    delete: del, // 'delete' is a reserved keyword
+    async findById(id: IdType): Promise<SelectModel | undefined> {
+      const result = await db.select().from(schema).where(eq(schema.id, id)).limit(1);
+      return result[0];
+    },
+
+    async findAll(): Promise<SelectModel[]> {
+      return db.select().from(schema);
+    },
+
+    async insert(data: InsertModel): Promise<SelectModel> {
+      const result = await db.insert(schema).values(data).returning();
+      return result[0];
+    },
+
+    async update(id: IdType, data: Partial<InsertModel>): Promise<SelectModel | undefined> {
+      const result = await db.update(schema).set(data).where(eq(schema.id, id)).returning();
+      return result[0];
+    },
+
+    async delete(id: IdType): Promise<void> {
+      await db.delete(schema).where(eq(schema.id, id));
+    },
   };
-} 
+}

@@ -15,7 +15,9 @@
     "release": "NODE_ENV=production bash scripts/release.sh",
     "prepublishOnly": "pnpm run build",
     "test": "NODE_ENV=development jest",
-    "test:coverage": "NODE_ENV=development jest --coverage"
+    "test:coverage": "NODE_ENV=development jest --coverage",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "ts-node scripts/migrate.ts"
   },
   "keywords": [],
   "author": "Vikash Verma",
