@@ -15,11 +15,9 @@ import {
   fromUnixTime,
   isLeapYear as dfIsLeapYear,
   compareAsc,
-  isSameHour as dfIsSameHour,
-  isSameMinute as dfIsSameMinute,
-  isSameSecond as dfIsSameSecond,
 } from 'date-fns';
 import { toZonedTime, formatInTimeZone, fromZonedTime } from 'date-fns-tz';
+import { getHours, getMinutes, getSeconds } from 'date-fns';
 
 export type TimeZone = 'UTC' | 'IST' | string; // Allow string for other IANA timezones
 
@@ -273,7 +271,7 @@ export class DateUtil {
   isSameHour(a: Date, b: Date): boolean {
     const zonedA = toZonedTime(a, DateUtil.timezone);
     const zonedB = toZonedTime(b, DateUtil.timezone);
-    return dfIsSameHour(zonedA, zonedB);
+    return getHours(zonedA) === getHours(zonedB);
   }
 
   /**
@@ -285,7 +283,7 @@ export class DateUtil {
   isSameMinute(a: Date, b: Date): boolean {
     const zonedA = toZonedTime(a, DateUtil.timezone);
     const zonedB = toZonedTime(b, DateUtil.timezone);
-    return dfIsSameMinute(zonedA, zonedB);
+    return getMinutes(zonedA) === getMinutes(zonedB);
   }
 
   /**
@@ -297,6 +295,6 @@ export class DateUtil {
   isSameSecond(a: Date, b: Date): boolean {
     const zonedA = toZonedTime(a, DateUtil.timezone);
     const zonedB = toZonedTime(b, DateUtil.timezone);
-    return dfIsSameSecond(zonedA, zonedB);
+    return getSeconds(zonedA) === getSeconds(zonedB);
   }
 }

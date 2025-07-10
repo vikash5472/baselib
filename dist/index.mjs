@@ -602,12 +602,10 @@ import {
   getUnixTime,
   fromUnixTime,
   isLeapYear as dfIsLeapYear,
-  compareAsc,
-  isSameHour as dfIsSameHour,
-  isSameMinute as dfIsSameMinute,
-  isSameSecond as dfIsSameSecond
+  compareAsc
 } from "date-fns";
 import { toZonedTime, formatInTimeZone, fromZonedTime } from "date-fns-tz";
+import { getHours, getMinutes, getSeconds } from "date-fns";
 var TIMEZONE_MAP = {
   UTC: "Etc/UTC",
   IST: "Asia/Kolkata"
@@ -828,7 +826,7 @@ var _DateUtil = class _DateUtil {
   isSameHour(a, b) {
     const zonedA = toZonedTime(a, _DateUtil.timezone);
     const zonedB = toZonedTime(b, _DateUtil.timezone);
-    return dfIsSameHour(zonedA, zonedB);
+    return getHours(zonedA) === getHours(zonedB);
   }
   /**
    * Checks if two dates are in the same minute in the configured timezone.
@@ -839,7 +837,7 @@ var _DateUtil = class _DateUtil {
   isSameMinute(a, b) {
     const zonedA = toZonedTime(a, _DateUtil.timezone);
     const zonedB = toZonedTime(b, _DateUtil.timezone);
-    return dfIsSameMinute(zonedA, zonedB);
+    return getMinutes(zonedA) === getMinutes(zonedB);
   }
   /**
    * Checks if two dates are in the same second in the configured timezone.
@@ -850,7 +848,7 @@ var _DateUtil = class _DateUtil {
   isSameSecond(a, b) {
     const zonedA = toZonedTime(a, _DateUtil.timezone);
     const zonedB = toZonedTime(b, _DateUtil.timezone);
-    return dfIsSameSecond(zonedA, zonedB);
+    return getSeconds(zonedA) === getSeconds(zonedB);
   }
 };
 _DateUtil.timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;

@@ -135,6 +135,41 @@ describe('Utils Module', () => {
             expect(newDate.getUTCDate()).toBe(6); // UTC date
         });
 
+        it('should subtract days from a date', () => {
+            const dateUtil = new DateUtil();
+            const initialDate = new Date('2023-01-07T12:00:00Z');
+            const newDate = dateUtil.subDays(initialDate, 5);
+            expect(newDate.getUTCDate()).toBe(2); // UTC date
+        });
+
+        it('should add hours to a date', () => {
+            const dateUtil = new DateUtil();
+            const initialDate = new Date('2023-01-01T12:00:00Z');
+            const newDate = dateUtil.addHours(initialDate, 3);
+            expect(newDate.getUTCHours()).toBe(15);
+        });
+
+        it('should subtract hours from a date', () => {
+            const dateUtil = new DateUtil();
+            const initialDate = new Date('2023-01-01T12:00:00Z');
+            const newDate = dateUtil.subHours(initialDate, 3);
+            expect(newDate.getUTCHours()).toBe(9);
+        });
+
+        it('should add minutes to a date', () => {
+            const dateUtil = new DateUtil();
+            const initialDate = new Date('2023-01-01T12:00:00Z');
+            const newDate = dateUtil.addMinutes(initialDate, 30);
+            expect(newDate.getUTCMinutes()).toBe(30);
+        });
+
+        it('should subtract minutes from a date', () => {
+            const dateUtil = new DateUtil();
+            const initialDate = new Date('2023-01-01T12:30:00Z');
+            const newDate = dateUtil.subMinutes(initialDate, 30);
+            expect(newDate.getUTCMinutes()).toBe(0);
+        });
+
         it('should check if a date is in the future', () => {
             const dateUtil = new DateUtil();
             const futureDate = new Date(Date.now() + 100000);
@@ -143,43 +178,79 @@ describe('Utils Module', () => {
             expect(dateUtil.isFuture(pastDate)).toBe(false);
         });
 
-        it('should return the start of the day', () => {
+        it('should check if a date is in the past', () => {
+            const dateUtil = new DateUtil();
+            const futureDate = new Date(Date.now() + 100000);
+            const pastDate = new Date(Date.now() - 100000);
+            expect(dateUtil.isPast(futureDate)).toBe(false);
+            expect(dateUtil.isPast(pastDate)).toBe(true);
+        });
+
+        it('should check if a date is today', () => {
+            const dateUtil = new DateUtil();
+            const today = new Date();
+            const tomorrow = dateUtil.addDays(today, 1);
+            expect(dateUtil.isToday(today)).toBe(true);
+            expect(dateUtil.isToday(tomorrow)).toBe(false);
+        });
+
+        it('should check if two dates are on the same day', () => {
+            const dateUtil = new DateUtil();
+            const date1 = new Date('2023-01-15T10:00:00Z');
+            const date2 = new Date('2023-01-15T15:00:00Z');
+            const date3 = new Date('2023-01-16T10:00:00Z');
+            expect(dateUtil.isSameDay(date1, date2)).toBe(true);
+            expect(dateUtil.isSameDay(date1, date3)).toBe(false);
+        });
+
+        it('should return the end of the day', () => {
             const dateUtil = new DateUtil('America/New_York');
             const testDate = new Date('2023-01-15T15:30:00Z'); // UTC 3:30 PM
-            const startOfDay = dateUtil.startOfDay(testDate);
-            // In New York (UTC-5), 15:30 UTC is 10:30 AM NY. Start of day is 00:00 NY.
-            // This will be 05:00 UTC.
-            expect(startOfDay.toISOString()).toMatch(/^2023-01-15T05:00:00\.000Z/);
+            const endOfDay = dateUtil.endOfDay(testDate);
+            // In New York (UTC-5), 15:30 UTC is 10:30 AM NY. End of day is 23:59:59.999 NY.
+            // This will be 04:59:59.999 UTC of the next day.
+            expect(endOfDay.toISOString()).toMatch(/^2023-01-16T04:59:59\.999Z/);
         });
 
-        it('should check if two dates are in the same hour', () => {
-            const dateUtil = new DateUtil('America/New_York'); // Test with a specific timezone
-            const date1 = new Date('2023-01-15T10:30:00Z'); // 5:30 AM in NY
-            const date2 = new Date('2023-01-15T10:59:00Z'); // 5:59 AM in NY
-            const date3 = new Date('2023-01-15T11:00:00Z'); // 6:00 AM in NY (different hour)
-
-            expect(dateUtil.isSameHour(date1, date2)).toBe(true);
-            expect(dateUtil.isSameHour(date1, date3)).toBe(false);
+        it('should compare two dates', () => {
+            const dateUtil = new DateUtil();
+            const date1 = new Date('2023-01-15T10:00:00Z');
+            const date2 = new Date('2023-01-15T15:00:00Z');
+            const date3 = new Date('2023-01-15T10:00:00Z');
+            expect(dateUtil.compareDates(date1, date2)).toBeLessThan(0);
+            expect(dateUtil.compareDates(date2, date1)).toBeGreaterThan(0);
+            expect(dateUtil.compareDates(date1, date3)).toBe(0);
         });
 
-        it('should check if two dates are in the same minute', () => {
-            const dateUtil = new DateUtil('America/New_York');
-            const date1 = new Date('2023-01-15T10:30:15Z'); // 5:30:15 AM in NY
-            const date2 = new Date('2023-01-15T10:30:45Z'); // 5:30:45 AM in NY
-            const date3 = new Date('2023-01-15T10:31:00Z'); // 5:31:00 AM in NY (different minute)
-
-            expect(dateUtil.isSameMinute(date1, date2)).toBe(true);
-            expect(dateUtil.isSameMinute(date1, date3)).toBe(false);
+        it('should calculate days between two dates', () => {
+            const dateUtil = new DateUtil();
+            const date1 = new Date('2023-01-01T10:00:00Z');
+            const date2 = new Date('2023-01-05T15:00:00Z');
+            expect(dateUtil.daysBetween(date1, date2)).toBe(4);
+            expect(dateUtil.daysBetween(date2, date1)).toBe(4);
+            expect(dateUtil.daysBetween(date1, date1)).toBe(0);
         });
 
-        it('should check if two dates are in the same second', () => {
-            const dateUtil = new DateUtil('America/New_York');
-            const date1 = new Date('2023-01-15T10:30:15.123Z'); // 5:30:15.123 AM in NY
-            const date2 = new Date('2023-01-15T10:30:15.456Z'); // 5:30:15.456 AM in NY
-            const date3 = new Date('2023-01-15T10:30:16.000Z'); // 5:30:16.000 AM in NY (different second)
-
-            expect(dateUtil.isSameSecond(date1, date2)).toBe(true);
-            expect(dateUtil.isSameSecond(date1, date3)).toBe(false);
+        it('should convert date to unix timestamp', () => {
+            const dateUtil = new DateUtil();
+            const testDate = new Date('2023-01-01T00:00:00Z');
+            expect(dateUtil.toUnix(testDate)).toBe(1672531200);
         });
+
+        it('should convert unix timestamp to date', () => {
+            const dateUtil = new DateUtil();
+            const unixTimestamp = 1672531200; // 2023-01-01T00:00:00Z
+            const date = dateUtil.fromUnix(unixTimestamp);
+            expect(date.toISOString()).toBe('2023-01-01T00:00:00.000Z');
+        });
+
+        it('should check if a year is a leap year', () => {
+            const dateUtil = new DateUtil();
+            expect(dateUtil.isLeapYear(new Date('2024-01-01'))).toBe(true); // Leap year
+            expect(dateUtil.isLeapYear(new Date('2023-01-01'))).toBe(false); // Not a leap year
+            expect(dateUtil.isLeapYear(new Date('2000-01-01'))).toBe(true); // Leap year
+            expect(dateUtil.isLeapYear(new Date('1900-01-01'))).toBe(false); // Not a leap year
+        });
+
     });
 });

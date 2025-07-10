@@ -23,11 +23,13 @@ describe('SmtpProvider', () => {
 
     let provider: SmtpProvider;
     let mockSendMail: jest.Mock;
+    let mockCreateTransport: jest.Mock;
 
     beforeEach(() => {
         jest.clearAllMocks();
+        mockCreateTransport = nodemailer.createTransport as jest.Mock;
         provider = new SmtpProvider(mockSmtpOptions);
-        mockSendMail = (nodemailer.createTransport(mockSmtpOptions) as any).sendMail;
+        mockSendMail = mockCreateTransport.mock.results[0].value.sendMail;
     });
 
     it('should create a nodemailer transporter on initialization', () => {

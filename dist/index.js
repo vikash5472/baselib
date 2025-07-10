@@ -643,6 +643,7 @@ function validate(schema, data) {
 // src/utils/date.util.ts
 var import_date_fns = require("date-fns");
 var import_date_fns_tz = require("date-fns-tz");
+var import_date_fns2 = require("date-fns");
 var TIMEZONE_MAP = {
   UTC: "Etc/UTC",
   IST: "Asia/Kolkata"
@@ -863,7 +864,7 @@ var _DateUtil = class _DateUtil {
   isSameHour(a, b) {
     const zonedA = (0, import_date_fns_tz.toZonedTime)(a, _DateUtil.timezone);
     const zonedB = (0, import_date_fns_tz.toZonedTime)(b, _DateUtil.timezone);
-    return (0, import_date_fns.isSameHour)(zonedA, zonedB);
+    return (0, import_date_fns2.getHours)(zonedA) === (0, import_date_fns2.getHours)(zonedB);
   }
   /**
    * Checks if two dates are in the same minute in the configured timezone.
@@ -874,7 +875,7 @@ var _DateUtil = class _DateUtil {
   isSameMinute(a, b) {
     const zonedA = (0, import_date_fns_tz.toZonedTime)(a, _DateUtil.timezone);
     const zonedB = (0, import_date_fns_tz.toZonedTime)(b, _DateUtil.timezone);
-    return (0, import_date_fns.isSameMinute)(zonedA, zonedB);
+    return (0, import_date_fns2.getMinutes)(zonedA) === (0, import_date_fns2.getMinutes)(zonedB);
   }
   /**
    * Checks if two dates are in the same second in the configured timezone.
@@ -885,7 +886,7 @@ var _DateUtil = class _DateUtil {
   isSameSecond(a, b) {
     const zonedA = (0, import_date_fns_tz.toZonedTime)(a, _DateUtil.timezone);
     const zonedB = (0, import_date_fns_tz.toZonedTime)(b, _DateUtil.timezone);
-    return (0, import_date_fns.isSameSecond)(zonedA, zonedB);
+    return (0, import_date_fns2.getSeconds)(zonedA) === (0, import_date_fns2.getSeconds)(zonedB);
   }
 };
 _DateUtil.timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
