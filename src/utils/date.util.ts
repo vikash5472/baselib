@@ -15,6 +15,9 @@ import {
   fromUnixTime,
   isLeapYear as dfIsLeapYear,
   compareAsc,
+  isSameHour as dfIsSameHour,
+  isSameMinute as dfIsSameMinute,
+  isSameSecond as dfIsSameSecond,
 } from 'date-fns';
 import { toZonedTime, formatInTimeZone, fromZonedTime } from 'date-fns-tz';
 
@@ -259,5 +262,41 @@ export class DateUtil {
    */
   isLeapYear(date: Date): boolean {
     return dfIsLeapYear(date);
+  }
+
+  /**
+   * Checks if two dates are in the same hour in the configured timezone.
+   * @param a The first date.
+   * @param b The second date.
+   * @returns True if the dates are in the same hour, false otherwise.
+   */
+  isSameHour(a: Date, b: Date): boolean {
+    const zonedA = toZonedTime(a, DateUtil.timezone);
+    const zonedB = toZonedTime(b, DateUtil.timezone);
+    return dfIsSameHour(zonedA, zonedB);
+  }
+
+  /**
+   * Checks if two dates are in the same minute in the configured timezone.
+   * @param a The first date.
+   * @param b The second date.
+   * @returns True if the dates are in the same minute, false otherwise.
+   */
+  isSameMinute(a: Date, b: Date): boolean {
+    const zonedA = toZonedTime(a, DateUtil.timezone);
+    const zonedB = toZonedTime(b, DateUtil.timezone);
+    return dfIsSameMinute(zonedA, zonedB);
+  }
+
+  /**
+   * Checks if two dates are in the same second in the configured timezone.
+   * @param a The first date.
+   * @param b The second date.
+   * @returns True if the dates are in the same second, false otherwise.
+   */
+  isSameSecond(a: Date, b: Date): boolean {
+    const zonedA = toZonedTime(a, DateUtil.timezone);
+    const zonedB = toZonedTime(b, DateUtil.timezone);
+    return dfIsSameSecond(zonedA, zonedB);
   }
 }

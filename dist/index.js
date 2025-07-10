@@ -854,6 +854,39 @@ var _DateUtil = class _DateUtil {
   isLeapYear(date) {
     return (0, import_date_fns.isLeapYear)(date);
   }
+  /**
+   * Checks if two dates are in the same hour in the configured timezone.
+   * @param a The first date.
+   * @param b The second date.
+   * @returns True if the dates are in the same hour, false otherwise.
+   */
+  isSameHour(a, b) {
+    const zonedA = (0, import_date_fns_tz.toZonedTime)(a, _DateUtil.timezone);
+    const zonedB = (0, import_date_fns_tz.toZonedTime)(b, _DateUtil.timezone);
+    return (0, import_date_fns.isSameHour)(zonedA, zonedB);
+  }
+  /**
+   * Checks if two dates are in the same minute in the configured timezone.
+   * @param a The first date.
+   * @param b The second date.
+   * @returns True if the dates are in the same minute, false otherwise.
+   */
+  isSameMinute(a, b) {
+    const zonedA = (0, import_date_fns_tz.toZonedTime)(a, _DateUtil.timezone);
+    const zonedB = (0, import_date_fns_tz.toZonedTime)(b, _DateUtil.timezone);
+    return (0, import_date_fns.isSameMinute)(zonedA, zonedB);
+  }
+  /**
+   * Checks if two dates are in the same second in the configured timezone.
+   * @param a The first date.
+   * @param b The second date.
+   * @returns True if the dates are in the same second, false otherwise.
+   */
+  isSameSecond(a, b) {
+    const zonedA = (0, import_date_fns_tz.toZonedTime)(a, _DateUtil.timezone);
+    const zonedB = (0, import_date_fns_tz.toZonedTime)(b, _DateUtil.timezone);
+    return (0, import_date_fns.isSameSecond)(zonedA, zonedB);
+  }
 };
 _DateUtil.timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 var DateUtil = _DateUtil;

@@ -29,6 +29,18 @@ describe('Utils Module', () => {
                 const uuid2 = _.uuid();
                 expect(uuid1).not.toBe(uuid2);
             });
+
+            it('should generate a UUID using the fallback method when crypto.randomUUID is not available', () => {
+                const originalCrypto = global.crypto;
+                // @ts-ignore
+                global.crypto = { randomUUID: undefined }; // Force fallback
+
+                const uuid = _.uuid();
+                expect(uuid).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i);
+                expect(uuid).not.toBe(originalCrypto?.randomUUID ? originalCrypto.randomUUID() : undefined); // Ensure it's not using the original if it existed
+
+                global.crypto = originalCrypto; // Restore original crypto
+            });
         });
 
         describe('_.retry', () => {
@@ -138,6 +150,36 @@ describe('Utils Module', () => {
             // In New York (UTC-5), 15:30 UTC is 10:30 AM NY. Start of day is 00:00 NY.
             // This will be 05:00 UTC.
             expect(startOfDay.toISOString()).toMatch(/^2023-01-15T05:00:00\.000Z/);
+        });
+
+        it('should check if two dates are in the same hour', () => {
+            const dateUtil = new DateUtil('America/New_York'); // Test with a specific timezone
+            const date1 = new Date('2023-01-15T10:30:00Z'); // 5:30 AM in NY
+            const date2 = new Date('2023-01-15T10:59:00Z'); // 5:59 AM in NY
+            const date3 = new Date('2023-01-15T11:00:00Z'); // 6:00 AM in NY (different hour)
+
+            expect(dateUtil.isSameHour(date1, date2)).toBe(true);
+            expect(dateUtil.isSameHour(date1, date3)).toBe(false);
+        });
+
+        it('should check if two dates are in the same minute', () => {
+            const dateUtil = new DateUtil('America/New_York');
+            const date1 = new Date('2023-01-15T10:30:15Z'); // 5:30:15 AM in NY
+            const date2 = new Date('2023-01-15T10:30:45Z'); // 5:30:45 AM in NY
+            const date3 = new Date('2023-01-15T10:31:00Z'); // 5:31:00 AM in NY (different minute)
+
+            expect(dateUtil.isSameMinute(date1, date2)).toBe(true);
+            expect(dateUtil.isSameMinute(date1, date3)).toBe(false);
+        });
+
+        it('should check if two dates are in the same second', () => {
+            const dateUtil = new DateUtil('America/New_York');
+            const date1 = new Date('2023-01-15T10:30:15.123Z'); // 5:30:15.123 AM in NY
+            const date2 = new Date('2023-01-15T10:30:15.456Z'); // 5:30:15.456 AM in NY
+            const date3 = new Date('2023-01-15T10:30:16.000Z'); // 5:30:16.000 AM in NY (different second)
+
+            expect(dateUtil.isSameSecond(date1, date2)).toBe(true);
+            expect(dateUtil.isSameSecond(date1, date3)).toBe(false);
         });
     });
 });

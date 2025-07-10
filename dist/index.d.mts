@@ -489,6 +489,27 @@ declare class DateUtil {
      * @returns True if the year is a leap year, false otherwise.
      */
     isLeapYear(date: Date): boolean;
+    /**
+     * Checks if two dates are in the same hour in the configured timezone.
+     * @param a The first date.
+     * @param b The second date.
+     * @returns True if the dates are in the same hour, false otherwise.
+     */
+    isSameHour(a: Date, b: Date): boolean;
+    /**
+     * Checks if two dates are in the same minute in the configured timezone.
+     * @param a The first date.
+     * @param b The second date.
+     * @returns True if the dates are in the same minute, false otherwise.
+     */
+    isSameMinute(a: Date, b: Date): boolean;
+    /**
+     * Checks if two dates are in the same second in the configured timezone.
+     * @param a The first date.
+     * @param b The second date.
+     * @returns True if the dates are in the same second, false otherwise.
+     */
+    isSameSecond(a: Date, b: Date): boolean;
 }
 
 declare const _: lodash__default.LoDashStatic;
