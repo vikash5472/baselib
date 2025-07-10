@@ -5,13 +5,9 @@ import { CloudAdapter, UploadOptions, PresignOptions, UploadResult, AwsCredentia
 
 export class AwsAdapter implements CloudAdapter {
   private getS3Client(credentials: AwsCredentials): S3Client {
-    const { region, accessKeyId, secretAccessKey } = credentials;
+    const { region } = credentials;
     return new S3Client({
       region,
-      credentials: {
-        accessKeyId,
-        secretAccessKey,
-      },
     });
   }
 
